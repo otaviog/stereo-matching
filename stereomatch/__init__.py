@@ -1,2 +1,1 @@
-from . import aggregation
-from . import cost
+from . import (aggregation, cost, cuda_texture)

@@ -13,18 +13,44 @@ import imageio
 import stereomatch
 
 
+def _ssd_texture_wrapper(left_image: torch.Tensor, right_image: torch.Tensor,
+                         max_disparity: int):
+    return stereomatch.cost.ssd_texture(
+        stereomatch.cuda_texture.CUDATexture.from_tensor(left_image.cuda()),
+        stereomatch.cuda_texture.CUDATexture.from_tensor(right_image.cuda()),
+        max_disparity)
+
+
+COST_METHODS = {
+    "ssd": stereomatch.cost.ssd,
+    "ssd-texture": _ssd_texture_wrapper
+}
+
+AGGREGATION_METHODS = {
+    "wta": stereomatch.aggregation.WinnerTakesAll,
+    "dyn": stereomatch.aggregation.DynamicProgramming
+}
+
+
 def _main():
     parser = argparse.ArgumentParser()
     parser.add_argument("left_image", metavar="left-image")
     parser.add_argument("right_image", metavar="right-image")
     parser.add_argument("max_disparity", metavar="max-disparity", type=int)
     parser.add_argument("output_depthmap", metavar="output-depthmap")
+    parser.add_argument("-cm", "--cost-method", choices=COST_METHODS.keys(),
+                        default="ssd")
+    parser.add_argument("-am", "--aggregation-method",
+                        choices=AGGREGATION_METHODS.keys(), default="wta")
     parser.add_argument("-g", "--ground-truth")
     parser.add_argument("-c", "--cuda-on", action="store_true")
     parser.add_argument("-sd", "--show-depthmap", action="store_true")
 
     args = parser.parse_args()
 
+    cost_method = COST_METHODS[args.cost_method]
+    aggregation_method = AGGREGATION_METHODS[args.aggregation_method]()
+        
     left_image = torch.from_numpy(
         np.array(Image.open(args.left_image).convert('L')))
     right_image = torch.from_numpy(
@@ -34,11 +60,10 @@ def _main():
         left_image = left_image.to("cuda:0")
         right_image = right_image.to("cuda:0")
 
-    cost_volume = stereomatch.cost.ssd(
+    cost_volume = cost_method(
         left_image, right_image, args.max_disparity)
 
-    matcher = stereomatch.aggregation.WinnerTakesAll()
-    depthmap = matcher.estimate(cost_volume)
+    depthmap = aggregation_method.estimate(cost_volume)
 
     depthmap = depthmap.cpu().numpy().astype(np.uint16)
 

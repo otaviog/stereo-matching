@@ -221,6 +221,33 @@ cost.cpp.s:
 	cd /home/otavio/slam/dev-local/stereo-matching && $(MAKE) -f src/CMakeFiles/stereomatch.dir/build.make src/CMakeFiles/stereomatch.dir/cost.cpp.s
 .PHONY : cost.cpp.s
 
+cuda_texture.o: cuda_texture.cpp.o
+
+.PHONY : cuda_texture.o
+
+# target to build an object file
+cuda_texture.cpp.o:
+	cd /home/otavio/slam/dev-local/stereo-matching && $(MAKE) -f src/CMakeFiles/stereomatch.dir/build.make src/CMakeFiles/stereomatch.dir/cuda_texture.cpp.o
+.PHONY : cuda_texture.cpp.o
+
+cuda_texture.i: cuda_texture.cpp.i
+
+.PHONY : cuda_texture.i
+
+# target to preprocess a source file
+cuda_texture.cpp.i:
+	cd /home/otavio/slam/dev-local/stereo-matching && $(MAKE) -f src/CMakeFiles/stereomatch.dir/build.make src/CMakeFiles/stereomatch.dir/cuda_texture.cpp.i
+.PHONY : cuda_texture.cpp.i
+
+cuda_texture.s: cuda_texture.cpp.s
+
+.PHONY : cuda_texture.s
+
+# target to generate assembly for a file
+cuda_texture.cpp.s:
+	cd /home/otavio/slam/dev-local/stereo-matching && $(MAKE) -f src/CMakeFiles/stereomatch.dir/build.make src/CMakeFiles/stereomatch.dir/cuda_texture.cpp.s
+.PHONY : cuda_texture.cpp.s
+
 cuda_utils.o: cuda_utils.cpp.o
 
 .PHONY : cuda_utils.o
@@ -267,6 +294,9 @@ help:
 	@echo "... cost.o"
 	@echo "... cost.i"
 	@echo "... cost.s"
+	@echo "... cuda_texture.o"
+	@echo "... cuda_texture.i"
+	@echo "... cuda_texture.s"
 	@echo "... cuda_utils.o"
 	@echo "... cuda_utils.i"
 	@echo "... cuda_utils.s"

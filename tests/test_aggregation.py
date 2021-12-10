@@ -32,7 +32,7 @@ class AbstractAggregationTestCase:
         return cost_volume
 
 
-class aTestWinnersTakeAll(AbstractAggregationTestCase):
+class TestWinnersTakeAll(AbstractAggregationTestCase):
     def test_cpu(self):
         cost_volume = self.get_ssd_cost_volume()
         matcher = stereomatch.aggregation.WinnerTakesAll()

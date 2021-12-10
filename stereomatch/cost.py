@@ -13,3 +13,12 @@ def ssd(left_image, right_image, max_disparity, kernel_size=7):
                          right_image.float(), cost_volume, kernel_size)
 
     return cost_volume
+
+def ssd_texture(left_image, right_image, max_disparity, kernel_size=7):
+    cost_volume = torch.full(
+        (max_disparity, left_image.height, left_image.width), float("inf"),
+        dtype=torch.float, device="cuda:0")
+    _CostOps.compute_ssd(left_image,
+                         right_image, cost_volume, kernel_size)
+
+    return cost_volume

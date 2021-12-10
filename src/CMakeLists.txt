@@ -4,6 +4,7 @@ set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS} -Xcudafe --diag_suppress=esa_on_defaulte
 
 cuda_add_library(stereomatch
   cuda_utils.cpp
+  cuda_texture.cpp
   # Costs
   cost.cpp
   ssd.cu  
