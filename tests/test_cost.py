@@ -28,13 +28,15 @@ def images_rgb():
 def test_ssd(images_rgb):
     left, right = images_rgb
     max_disparity = 40
-    cost_volume_tex = ssd_texture(
-        CUDATexture.from_tensor(left.cuda()),
-        CUDATexture.from_tensor(right.cuda()),
-        max_disparity)
-
+    print("use texture")
+    tex1 = CUDATexture.from_tensor(left, normalized_coords=False)
+    tex2 = CUDATexture.from_tensor(right, normalized_coords=False)
+    cost_volume_tex = ssd_texture(tex1, tex2, max_disparity)
+    print("done texture")
     cost_volume_gpu = ssd(left.cuda(), right.cuda(), max_disparity)
-    cost_volume_cpu = ssd(left, right, max_disparity)
 
-    torch.testing.assert_allclose(cost_volume_tex.cpu(), cost_volume_cpu)
+    cost_volume_cpu = ssd(left, right, max_disparity)
+    __import__("ipdb").set_trace()
     torch.testing.assert_allclose(cost_volume_gpu.cpu(), cost_volume_cpu)
+    torch.testing.assert_allclose(cost_volume_tex.cpu(), cost_volume_cpu)
+

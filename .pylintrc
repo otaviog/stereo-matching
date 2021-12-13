@@ -1,0 +1,17 @@
+[tool.pylint.master]
+good-names = i,j,k,ex,Run,_,x,y,X,Y,x1,x2,y1,y2,g,p,t
+output-format = colorized
+max-line-length = 100
+ignored-modules = numpy, PurePath
+ignored-classes = numpy, PurePath
+generated-members=numpy.*,torch.*
+disable = fixme,
+  too-many-instance-attributes,
+  too-few-public-methods,
+  too-many-locals,
+  too-many-arguments,
+  bare-except,
+  broad-except,
+  duplicate-code,
+  not-callable,
+  consider-using-f-string

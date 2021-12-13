@@ -2,17 +2,20 @@ from ._cstereomatch import CUDATexture as _CCUDATexture
 
 
 class CUDATexture(_CCUDATexture):
-    def __init__(self):
-        pass
+    def __del__(self):
+        self.release()
 
     @classmethod
-    def from_tensor(cls, tensor):
+    def from_tensor(cls, tensor, normalized_coords=False):
         sizes = tensor.size()
-        return _CCUDATexture.from_tensor(tensor.float().view(
-            sizes[0], sizes[1], -1))
+        texture = CUDATexture()
+        texture.copy_from_tensor(tensor.view(
+            sizes[0], sizes[1], -1), normalized_coords)
+        return texture
 
     def __str__(self):
-        pass
+        return (f"CUDATexture(texture_object={self.cuda_texture_object}, "
+                f"width={self.width}, height={self.height}, channels={self.channels})")
 
     def __repr__(self):
         return str(self)

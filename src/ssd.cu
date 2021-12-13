@@ -29,14 +29,12 @@ struct SSDKernel {
   __device__ __host__ void operator()(int row, int col) {
     for (int disp = 0; disp < cost_volume.size(0); ++disp) {
       if (col - disp < 0) {
-        // cost_volume[disp][row][col] = empty_value;
         return;
       }
 
       const int row_start = max(row - kernel_size, 0);
       const int row_end = min(row + kernel_size, int(cost_volume.size(1)));
 
-      // const int col_start = max(col - kernel_size, 0);
       const int col_start =
           abs(min(col - disp - kernel_size, 0)) + col - kernel_size;
       const int col_end = min(col + kernel_size, int(cost_volume.size(2)));
@@ -80,7 +78,7 @@ void CostOps::ComputeSSD(const torch::Tensor &left_image,
 
 template <typename scalar_t>
 struct SSDTextureKernel {
-  const cudaTextureObject_t left_image, right_image;
+  const CUDATextureAccessor left_image, right_image;
   torch::PackedTensorAccessor32<scalar_t, 3> cost_volume;
   const int kernel_size;
   const scalar_t empty_value;
@@ -88,8 +86,8 @@ struct SSDTextureKernel {
   SSDTextureKernel(const CUDATexture &left_image,
                    const CUDATexture &right_image, torch::Tensor &cost_volume,
                    int kernel_size, scalar_t empty_value)
-      : left_image(left_image),
-        right_image(right_image),
+      : left_image(left_image.accessor<float>()),
+        right_image(right_image.accessor<float>()),
         cost_volume(cost_volume.packed_accessor32<scalar_t, 3>()),
         kernel_size(kernel_size),
         empty_value(empty_value) {}
@@ -97,27 +95,26 @@ struct SSDTextureKernel {
   __device__ void operator()(int row, int col) {
     for (int disp = 0; disp < cost_volume.size(0); ++disp) {
       if (col - disp < 0) {
-        // cost_volume[disp][row][col] = empty_value;
         return;
       }
 
       const int row_start = max(row - kernel_size, 0);
       const int row_end = min(row + kernel_size, int(cost_volume.size(1)));
 
-      // const int col_start = max(col - kernel_size, 0);
       const int col_start =
           abs(min(col - disp - kernel_size, 0)) + col - kernel_size;
       const int col_end = min(col + kernel_size, int(cost_volume.size(2)));
 
       scalar_t cost_value = 0;
-
+      int width = cost_volume.size(2);
+      int height = cost_volume.size(1);
       for (int krow = row_start; krow < row_end; ++krow) {
         for (int kcol = col_start; kcol < col_end; ++kcol) {
-          const scalar_t left_intensity = tex2D<float>(left_image, kcol, krow);
+          const scalar_t left_intensity =
+              tex2D<float>(left_image.texture, kcol, row);
           const scalar_t right_intensity =
-              tex2D<float>(right_image, kcol, krow);
+              tex2D<float>(right_image.texture, kcol - disp, krow);
           const scalar_t diff = left_intensity - right_intensity;
-
           cost_value += diff * diff;
         }
       }

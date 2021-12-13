@@ -1,5 +1,7 @@
 # Stereo Matching Experiment
 
+This project is a revamp of my old stereo matching research with CUDA. In this repository in rewriten them using modern CUDA along with Pytorch to demonstrate how to Pytoh can be
+
 Learning project of classic stereo matching algorithms. Implementation done in PyTorch, CUDA and C++.
 
 Aproaches:
