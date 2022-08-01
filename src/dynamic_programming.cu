@@ -173,7 +173,7 @@ struct ReducePathKernel {
   }
 };
 
-void AggregationOps::RunDynamicProgramming(const torch::Tensor &cost_volume,
+void AggregationModule::RunDynamicProgramming(const torch::Tensor &cost_volume,
                                            torch::Tensor path_volume,
                                            torch::Tensor disp_costsum_per_row,
                                            torch::Tensor disparity_image) {

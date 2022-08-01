@@ -13,6 +13,8 @@ cuda_add_library(stereomatch
   aggregation.cpp
   winners_take_all.cu
   dynamic_programming.cu
+  # semiglobal.cu
+  semiglobal.cpp
 )
 
 

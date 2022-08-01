@@ -93,6 +93,8 @@ struct SSDTextureKernel {
         empty_value(empty_value) {}
 
   __device__ void operator()(int row, int col) {
+    const float width = cost_volume.size(2);
+    const float height = cost_volume.size(1);
     for (int disp = 0; disp < cost_volume.size(0); ++disp) {
       if (col - disp < 0) {
         return;
@@ -106,15 +108,21 @@ struct SSDTextureKernel {
       const int col_end = min(col + kernel_size, int(cost_volume.size(2)));
 
       scalar_t cost_value = 0;
-      int width = cost_volume.size(2);
-      int height = cost_volume.size(1);
       for (int krow = row_start; krow < row_end; ++krow) {
         for (int kcol = col_start; kcol < col_end; ++kcol) {
+#if 0
           const scalar_t left_intensity =
-              tex2D<float>(left_image.texture, kcol, row);
-          const scalar_t right_intensity =
-              tex2D<float>(right_image.texture, kcol - disp, krow);
+              tex2D<float>(left_image.texture, float(kcol) / width, float(krow) / height);
+          const scalar_t right_intensity = tex2D<float>(
+              right_image.texture, float(kcol - disp) / width, float(krow) / height);
+#else
+          const scalar_t left_intensity =
+              tex2D<float>(left_image.texture, kcol, krow);
+          const scalar_t right_intensity = tex2D<float>(
+              right_image.texture, kcol - disp, krow);
+#endif
           const scalar_t diff = left_intensity - right_intensity;
+
           cost_value += diff * diff;
         }
       }
@@ -134,8 +142,8 @@ void CostOps::ComputeSSD(const CUDATexture &left_image,
       cost_volume.scalar_type(), "ComputeSSD with Texture", ([&] {
         SSDTextureKernel<scalar_t> ssd_kernel(left_image, right_image,
                                               cost_volume, kernel_size, -1.0);
-        KernelLauncher<kCUDA>::Launch2D(ssd_kernel, left_image.get_height(),
-                                        left_image.get_width());
+        KernelLauncher<kCUDA>::Launch2D(ssd_kernel, left_image.get_width(),
+                                        left_image.get_height());
       }));
 }
 }  // namespace stereomatch

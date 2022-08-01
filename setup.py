@@ -1,8 +1,7 @@
-"""A setuptools based setup module for fusion-toolbox
+"""A setuptools based setup module.
 """
 
 import sys
-from os import path
 
 
 from setuptools import find_packages
@@ -16,22 +15,7 @@ except ImportError:
     print('  python -m pip install scikit-build')
     sys.exit(1)
 
-
-def _forbid_publish():
-    argv = sys.argv
-    blacklist = ['register', 'upload']
-
-    for command in blacklist:
-        if command in argv:
-            values = {'command': command}
-            print('Command "%(command)s" has been blacklisted, exiting...' %
-                  values)
-            sys.exit(2)
-
-
-_forbid_publish()
-
-REQUIREMENTS = [    
+REQUIREMENTS = [
     'numpy',
     'matplotlib',
     'scipy',

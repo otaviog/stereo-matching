@@ -1,60 +1,49 @@
 #pragma once
 
-#include "dim.hpp"
+#include <inttypes.h>
+#include <vector>
+
+#include "cuda_utils.hpp"
 
 namespace stereomatch {
 
+template <typename T>
+struct Point2 {
+  T x, y;
 
-struct __align__(8) SGPointU16
-{
-    unsigned short x, y;
+  Point2(T x = 0, T y = 0) : x{x}, y{y} {}
+
+  Point2<T> &operator+=(const Point2<T> &other) {
+    x += other.x;
+    y += other.y;
+    return *this;
+  }
+
+  friend Point2<T> operator+(Point2<T> lhs, const Point2<T> &rhs) {
+    lhs += rhs;
+    return lhs;
+  }
 };
 
-struct __align__(8) SGPointI6
-{
-    short x, y;
-};
-
-struct SGPath
-{
-    SGPoint start, end;
-    sSGPoint dir;
-    unsigned short size;    
-};
-
-class SGPaths
-{
-public:
-    SGPaths();
-  
-    SGPath* getDescDev(const Dim &imgDim);
-    
-    static SGPath* getDescCPU(const Dim &imgDim, size_t *pathCount);
-    
-    size_t pathCount() const
-    {
-        return m_pathCount;
-    }
-    
-    void unalloc();
-  
-private: 
-    static void horizontalPathsDesc(const Dim &imgDim, SGPath *paths);
-
-    static void verticalPathsDesc(const Dim &imgDim, SGPath *paths);
-
-    static void topBottomDiagonaDesc(const Dim &imgDim, SGPath *paths);
-    
-    static void bottomTopDiagonalDesc(const Dim &imgDim, SGPath *paths);
-
-    SGPath *m_paths_d;
-    tdv::Dim m_imgDim;
-    size_t m_pathCount;
-};
-
-void SemiGlobalRunDev(const tdv::Dim &dsiDim, cudaPitchedPtr dsi,
-                      const tdv::SGPath *pathsArray, size_t pathCount,
-                      const float *lorigin, cudaPitchedPtr aggregDSI, 
-                      float *dispImg, bool zeroAggregDSI);
-
+template <typename S, typename T>
+STB_DEVICE_HOST S cast_point2(const Point2<T> &pt) {
+  return S{pt.x, pt.y};
 }
+
+struct SGPixelPath {
+  Point2<int16_t> start, end;
+  Point2<int16_t> direction;
+  uint16_t size;
+
+  SGPixelPath(Point2<int16_t> start, Point2<int16_t> end,
+              Point2<int16_t> direction, int16_t size)
+      : start(start), end(end), direction(direction), size(size) {}
+
+  SGPixelPath inverse() const {
+    return SGPixelPath(end, start, Point2<int16_t>(-direction.x, -direction.y),
+                       size);
+  }
+  static std::vector<SGPixelPath> GeneratePaths(size_t width, size_t height);
+};
+
+}  // namespace stereomatch

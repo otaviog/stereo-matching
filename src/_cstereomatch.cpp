@@ -11,6 +11,6 @@ PYBIND11_MODULE(_cstereomatch, m) {
   using namespace stereomatch;
 
   CostOps::RegisterPybind(m);
-  AggregationOps::RegisterPybind(m);
+  AggregationModule::RegisterPybind(m);
   CUDATexture::RegisterPybind(m);
 }

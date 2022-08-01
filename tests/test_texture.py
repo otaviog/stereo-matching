@@ -88,7 +88,7 @@ def test_kernel2():
 def test_completeness():
     for dtype in [torch.uint8, torch.float32]:
         for device in ["cpu", "cuda:0"]:
-            tensor = torch.rand(512, 128, 1) * 255.0
+            tensor = torch.rand(513, 123, 1) * 255.0
             tensor = tensor.to(dtype).to(device)
 
             tex = CUDATexture.from_tensor(tensor)

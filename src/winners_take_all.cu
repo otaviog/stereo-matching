@@ -33,7 +33,7 @@ struct WTAKernel {
   }
 };
 
-void AggregationOps::RunWinnersTakeAll(const torch::Tensor &cost_volume,
+void AggregationModule::RunWinnersTakeAll(const torch::Tensor &cost_volume,
                                        torch::Tensor disparity_image) {
   const auto ref_device = cost_volume.device();
 
