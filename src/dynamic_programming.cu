@@ -80,9 +80,9 @@ struct ComputePathCUDAKernel {
     if (disp == 0) {
       // pad the border with infinity for avoiding checking disparity
       // indices.
-      shr_previous_col_cost[0] = NumericLimits<kCUDA, scalar_t>::infinity();
+      shr_previous_col_cost[0] = NumericLimits<scalar_t>::infinity();
       shr_previous_col_cost[cost_volume.size(0) + 1] =
-          NumericLimits<kCUDA, scalar_t>::infinity();
+          NumericLimits<scalar_t>::infinity();
     }
 
     shr_previous_col_cost[disp + 1] = cost_volume[disp][row][0];

@@ -36,7 +36,7 @@ def test_ssd(images_rgb):
     cost_volume_gpu = ssd(left.cuda(), right.cuda(), max_disparity)
 
     cost_volume_cpu = ssd(left, right, max_disparity)
-    __import__("ipdb").set_trace()
+
     torch.testing.assert_allclose(cost_volume_gpu.cpu(), cost_volume_cpu)
     torch.testing.assert_allclose(cost_volume_tex.cpu(), cost_volume_cpu)
 

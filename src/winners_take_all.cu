@@ -16,20 +16,21 @@ struct WTAKernel {
         disparity_image(Accessor<dev, int, 2>::Get(disparity_image)) {}
 
   __device__ __host__ void operator()(int row, int col) {
-    float leastDiff = 9999999;
-    int wonDisparity = 0;
+    scalar_t min_cost = 9999999;
+    int won_disparity = 0;
 
-    for (int d = 0; d < cost_volume.size(0) && (d + col) < cost_volume.size(2);
-         d++) {
-      const float diff = cost_volume[d][row][col];
-
-      if (diff < leastDiff) {
-        leastDiff = diff;
-        wonDisparity = d;
+	const auto disparity_costs = cost_volume[row][col];
+	const auto max_disparaty = cost_volume.size(2);
+	const auto width = cost_volume.size(1);
+	for (int disp = 0; disp < max_disparaty && (disp + col) < width; ++disp) {
+	  const auto cost = disparity_costs[disp];
+      if (cost < min_cost) {
+        min_cost = cost;
+        won_disparity = disp;
       }
     }
 
-    disparity_image[row][col] = wonDisparity;
+    disparity_image[row][col] = won_disparity;
   }
 };
 
@@ -38,13 +39,15 @@ void AggregationModule::RunWinnersTakeAll(const torch::Tensor &cost_volume,
   const auto ref_device = cost_volume.device();
 
   STM_CHECK_DEVICE(ref_device, disparity_image);
-
+  const auto width = cost_volume.size(1);
+  const auto height = cost_volume.size(0);
+  
+	
   STM_DISPATCH_KERNEL_FLOATING_TYPES(
       cost_volume.scalar_type(), ref_device, "RunWinnersTakeAll", ([&] {
         WTAKernel<device, scalar_t> kernel(cost_volume, disparity_image);
-
-        KernelLauncher<device>::Launch2D(kernel, cost_volume.size(2),
-                                         cost_volume.size(1));
+		
+        KernelLauncher<device>::Launch2D(kernel, width, height);
       }));
 }
 }  // namespace stereomatch

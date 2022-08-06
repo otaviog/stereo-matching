@@ -121,11 +121,11 @@ struct SGMCostOperator {
  public:
   SGMCostOperator(const torch::TensorAccessor<scalar_t, 3> cost_volume,
                   const torch::TensorAccessor<scalar_t, 2> intensity_image,
-                  torch::TensorAccessor<scalar_t, 3> aggregated_volume,
+                  torch::TensorAccessor<scalar_t, 3> output_cost_vol,
                   scalar_t penalty1, scalar_t penalty2)
       : cost_volume(cost_volume),
         intensity_image(intensity_image),
-        aggregated_volume(aggregated_volume),
+        output_cost_vol(output_cost_vol),
         penalty1{penalty1},
         penalty2{penalty2},
         prev_cost(cost_volume.size(2),
@@ -140,10 +140,12 @@ struct SGMCostOperator {
     const auto X = path.start.x;
     const auto Y = path.start.y;
     const auto disparities = cost_volume[Y][X];
+    auto output_cost = output_cost_vol[Y][X];
+
     for (auto disp = 0; disp < max_disparity; disp++) {
       const auto cost = disparities[disp];
 
-      aggregated_volume[disp][Y][X] = cost;
+      output_cost[disp] = cost;
       prev_cost[disp] = cost;
     }
 
@@ -158,6 +160,7 @@ struct SGMCostOperator {
       const auto p2_adjusted = std::max(penalty1, penalty2 / std::abs(intensity - prev_intensity));
 
       const auto disparities = cost_volume[current_pixel.y][current_pixel.x];
+      auto output_cost = output_cost_vol[current_pixel.y][current_pixel.x];
       for (size_t disp = 0; disp < max_disparity; disp++) {
         const auto match_cost =
             disparities[disp];
@@ -166,7 +169,7 @@ struct SGMCostOperator {
             match_cost +
             get_min(prev_cost[disp], prev_cost[disp - 1] + penalty1,
                     prev_cost[disp + 1] + penalty1, prev_min_cost + p2_adjusted) - prev_min_cost;
-        aggregated_volume[disp][current_pixel.y][current_pixel.x] += sgm_cost;
+        output_cost[disp] += sgm_cost;
         prev_cost_cache[disp] = sgm_cost;
       }
 
@@ -179,7 +182,7 @@ struct SGMCostOperator {
  private:
   const torch::TensorAccessor<scalar_t, 3> cost_volume;
   const torch::TensorAccessor<scalar_t, 2> intensity_image;
-  torch::TensorAccessor<scalar_t, 3> aggregated_volume;
+  torch::TensorAccessor<scalar_t, 3> output_cost_vol;
   const scalar_t penalty1, penalty2;
 
   BorderedBuffer<scalar_t, 1> prev_cost, prev_cost_cache;

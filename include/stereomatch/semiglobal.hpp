@@ -26,7 +26,7 @@ struct Point2 {
 };
 
 template <typename S, typename T>
-STB_DEVICE_HOST S cast_point2(const Point2<T> &pt) {
+STM_DEVICE_HOST S cast_point2(const Point2<T> &pt) {
   return S{pt.x, pt.y};
 }
 

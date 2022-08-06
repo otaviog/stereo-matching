@@ -50,7 +50,6 @@ struct KernelLauncher<kCUDA> {
     CudaSafeCall(cudaDeviceSynchronize());
   }
 
-
   template <typename Kernel>
   static void Launch2D(Kernel &kern, int width, int height,
                        bool sequential = false) {
@@ -61,8 +60,8 @@ struct KernelLauncher<kCUDA> {
   }
 
   template <typename Kernel>
-  static void Launch2D(Kernel &kern, int width, int height,
-                       dim3 grid_size, dim3 block_size) {
+  static void Launch2D(Kernel &kern, int width, int height, dim3 grid_size,
+                       dim3 block_size) {
     Exec2DKernel<<<grid_size, block_size>>>(kern, width, height);
     CudaCheck();
     CudaSafeCall(cudaDeviceSynchronize());
@@ -92,10 +91,13 @@ struct KernelLauncher<kCPU> {
   static void Launch2D(Kernel &kern, int width, int height,
                        bool sequential = false) {
     if (!sequential) {
-#pragma omp parallel for
-      for (int row = 0; row < height; ++row) {
-        for (int col = 0; col < width; ++col) {
-          kern(row, col);
+#pragma omp parallel
+      {
+#pragma omp for
+        for (int row = 0; row < height; ++row) {
+          for (int col = 0; col < width; ++col) {
+            kern(row, col);
+          }
         }
       }
     } else {
@@ -108,7 +110,7 @@ struct KernelLauncher<kCPU> {
   }
 };
 
-}  // namespace slamtb
+}  // namespace stereomatch
 
 #define STM_DISPATCH_KERNEL_FLOATING_TYPES(TYPE, DEVICE, NAME, ...) \
   if (DEVICE.is_cuda()) {                                           \

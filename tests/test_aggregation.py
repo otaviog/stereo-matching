@@ -2,48 +2,10 @@
 Tests the aggregation functions.
 """
 
-from pathlib import Path
-import dataclasses
-
-import numpy as np
-from PIL import Image
 import torch
 import matplotlib.pyplot as plt
-import pytest
 
 import stereomatch
-
-
-@dataclasses.dataclass
-class CostFixture:
-    volume: torch.Tensor
-    left_image: torch.Tensor
-
-
-@pytest.fixture
-def ssd_cost():
-    cache_file = Path(__file__).parent / \
-        "test_cache/cost_volume_teddy.torch"
-
-    image_base_dir = Path(__file__).parent.parent / \
-        "test-data/middleburry/teddy/"
-
-    left_image = torch.from_numpy(
-        np.array(Image.open(image_base_dir / "im2.png").convert('L')))
-
-    if cache_file.exists():
-        return CostFixture(volume=torch.load(str(cache_file)),
-                           left_image=left_image)
-
-    right_image = torch.from_numpy(
-        np.array(Image.open(image_base_dir / "im6.png").convert('L')))
-
-    cost_volume = stereomatch.cost.ssd(
-        left_image, right_image, 100)
-
-    cache_file.parent.mkdir(exist_ok=True, parents=True)
-    torch.save(cost_volume, str(cache_file))
-    return CostFixture(volume=cost_volume, left_image=left_image)
 
 
 class TestWinnersTakeAll:
@@ -55,6 +17,15 @@ class TestWinnersTakeAll:
         fig = plt.figure()
         plt.imshow(depthmap)
         plt.savefig('wta-cpu.png')
+
+    @staticmethod
+    def test_benchmark_wta(ssd_cost, benchmark):
+        matcher = stereomatch.aggregation.WinnerTakesAll()
+        benchmark(matcher.estimate, ssd_cost.volume)
+
+    @staticmethod
+    def test_benchmark_torch(ssd_cost, benchmark):
+        benchmark(torch.argmax, ssd_cost.volume, 2)
 
 
 class TestDynamicProgramming:
@@ -75,25 +46,3 @@ class TestDynamicProgramming:
     @staticmethod
     def test_cuda(ssd_cost):
         TestDynamicProgramming._run_test(ssd_cost.volume, "cuda")
-
-
-class TestSGM:
-    @staticmethod
-    def test_cpu(ssd_cost):
-        matcher = stereomatch.aggregation.SemiglobalAggregation()
-
-        sgm_cost = matcher.estimate(
-            ssd_cost.volume, ssd_cost.left_image.float())
-
-        matcher2 = stereomatch.aggregation.WinnerTakesAll()
-        depthmap = matcher2.estimate(sgm_cost).cpu().numpy()
-
-        plt.figure()
-        plt.imshow(depthmap)
-        plt.savefig('sgm-cpu.png')
-
-    @staticmethod
-    def test_benchmark(ssd_cost, benchmark):
-        matcher = stereomatch.aggregation.SemiglobalAggregation()
-        benchmark(matcher.estimate,
-                  ssd_cost.volume, ssd_cost.left_image.float())

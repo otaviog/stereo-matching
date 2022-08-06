@@ -1,31 +1,33 @@
 #pragma once
 
 #include <limits>
+#include <cmath>
 #include <math_constants.h>
 
 #include "accessor.hpp"
 
 namespace stereomatch {
 
-template <Device dev, typename scalar_t>
+#ifdef __CUDACC__
+template <typename scalar_t>
 struct NumericLimits {};
 
-#ifdef __CUDACC__
 template <>
-struct NumericLimits<kCUDA, float> {
-  static inline __device__ float infinity() noexcept { return CUDART_INF_F; }
+struct NumericLimits<float> {
+  static constexpr __device__ __host__ float infinity() noexcept { return HUGE_VALF; }
 };
 
 template <>
-struct NumericLimits<kCUDA, double> {
-  static inline __device__ float infinity() noexcept { return CUDART_INF; }
+struct NumericLimits<double> {
+  static constexpr __device__ __host__ double infinity() noexcept { return HUGE_VAL; }
 };
-#endif
-
+#else
 template <typename scalar_t>
-struct NumericLimits<kCPU, scalar_t> {
+struct NumericLimits {
   static constexpr scalar_t infinity() noexcept {
     return std::numeric_limits<scalar_t>::infinity();
   }
 };
+#endif
+
 }  // namespace stereomatch

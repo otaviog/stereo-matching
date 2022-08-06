@@ -6,7 +6,7 @@ from stereomatch._cstereomatch import (AggregationOps as _AggregationOps)
 class WinnerTakesAll:
     def estimate(self, cost_volume):
         disparity_img = torch.empty(
-            cost_volume.size(1), cost_volume.size(2),
+            cost_volume.size(0), cost_volume.size(1),
             dtype=torch.int32, device=cost_volume.device)
         _AggregationOps.run_winners_take_all(cost_volume, disparity_img)
         return disparity_img
@@ -14,6 +14,8 @@ class WinnerTakesAll:
 
 class DynamicProgramming:
     def estimate(self, cost_volume):
+        # TODO: post dynamic programming to use DxHxW order.
+        cost_volume = cost_volume.permute(2, 0, 1)
         disparity_img = torch.empty(
             cost_volume.size(1), cost_volume.size(2),
             dtype=torch.int32, device=cost_volume.device)
@@ -37,12 +39,11 @@ class DynamicProgramming:
 
 class SemiglobalAggregation:
     def estimate(self, cost_volume, left_image):
-        sga_volume = torch.empty_like(cost_volume)
-        cost_volume = cost_volume.permute(1, 2, 0)
+        sga_volume = torch.zeros_like(cost_volume)
 
         _AggregationOps.run_semiglobal(
             cost_volume, left_image,
             0.1, 0.2,
             sga_volume)
 
-        return sga_volume # TODO: do permute
+        return sga_volume
