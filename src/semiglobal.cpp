@@ -1,8 +1,10 @@
 #include "semiglobal.hpp"
-#include "aggregation.hpp"
 
 #include <cassert>
 #include <vector>
+
+#include "aggregation.hpp"
+#include "check.hpp"
 
 namespace stereomatch {
 
@@ -157,18 +159,20 @@ struct SGMCostOperator {
           *std::min_element(prev_cost.begin(), prev_cost.end());
 
       const auto intensity = intensity_image[current_pixel.y][current_pixel.x];
-      const auto p2_adjusted = std::max(penalty1, penalty2 / std::abs(intensity - prev_intensity));
+      const auto p2_adjusted =
+          std::max(penalty1, penalty2 / std::abs(intensity - prev_intensity));
 
       const auto disparities = cost_volume[current_pixel.y][current_pixel.x];
       auto output_cost = output_cost_vol[current_pixel.y][current_pixel.x];
       for (size_t disp = 0; disp < max_disparity; disp++) {
-        const auto match_cost =
-            disparities[disp];
+        const auto match_cost = disparities[disp];
 
         const auto sgm_cost =
             match_cost +
             get_min(prev_cost[disp], prev_cost[disp - 1] + penalty1,
-                    prev_cost[disp + 1] + penalty1, prev_min_cost + p2_adjusted) - prev_min_cost;
+                    prev_cost[disp + 1] + penalty1,
+                    prev_min_cost + p2_adjusted) -
+            prev_min_cost;
         output_cost[disp] += sgm_cost;
         prev_cost_cache[disp] = sgm_cost;
       }
@@ -188,25 +192,40 @@ struct SGMCostOperator {
   BorderedBuffer<scalar_t, 1> prev_cost, prev_cost_cache;
 };
 
+void RunSemiglobalAggregationGPU(const torch::Tensor &cost_volume,
+                                 const torch::Tensor &left_image,
+                                 float penalty1, float penalty2,
+                                 torch::Tensor &output_cost_volume);
+
 void AggregationModule::RunSemiglobal(const torch::Tensor &cost_volume,
                                       const torch::Tensor &left_image,
                                       float penalty1, float penalty2,
                                       torch::Tensor &output_cost_volume) {
-  auto aggregation_paths(
-      SGPixelPath::GeneratePaths(left_image.size(1), left_image.size(0)));
+  const auto ref_device = cost_volume.device();
+  STM_CHECK_DEVICE(ref_device, left_image);
+  STM_CHECK_DEVICE(ref_device, output_cost_volume);
 
-  AT_DISPATCH_FLOATING_TYPES(cost_volume.scalar_type(), "SemiglobalCPU", [&] {
-    const auto max_disp = cost_volume.size(2);
+  if (ref_device.is_cuda()) {
+    RunSemiglobalAggregationGPU(cost_volume, left_image, penalty1, penalty2,
+                                output_cost_volume);
+  } else {
+    auto aggregation_paths(
+        SGPixelPath::GeneratePaths(left_image.size(1), left_image.size(0)));
 
-    SGMCostOperator<scalar_t> sgm_cost_op(
-        cost_volume.accessor<scalar_t, 3>(), left_image.accessor<scalar_t, 2>(),
-        output_cost_volume.accessor<scalar_t, 3>(), scalar_t(penalty1),
-        scalar_t(penalty2));
+    AT_DISPATCH_FLOATING_TYPES(cost_volume.scalar_type(), "SemiglobalCPU", [&] {
+      const auto max_disp = cost_volume.size(2);
 
-    for (const auto sg_path : aggregation_paths) {
-      sgm_cost_op(sg_path);
-      sgm_cost_op(sg_path.inverse());
-    }
-  });
+      SGMCostOperator<scalar_t> sgm_cost_op(
+          cost_volume.accessor<scalar_t, 3>(),
+          left_image.accessor<scalar_t, 2>(),
+          output_cost_volume.accessor<scalar_t, 3>(), scalar_t(penalty1),
+          scalar_t(penalty2));
+
+      for (const auto sg_path : aggregation_paths) {
+        sgm_cost_op(sg_path);
+        sgm_cost_op(sg_path.inverse());
+      }
+    });
+  }
 }
 }  // namespace stereomatch

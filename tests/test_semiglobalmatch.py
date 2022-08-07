@@ -18,6 +18,7 @@ def _test_impl(ssd_cost, suffix):
 
     plt.figure()
     plt.imshow(depthmap)
+    plt.axis('off')
     plt.savefig(f'sgm-{suffix}.png')
 
 

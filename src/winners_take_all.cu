@@ -15,10 +15,10 @@ struct WTAKernel {
       : cost_volume(Accessor<dev, scalar_t, 3>::Get(cost_volume)),
         disparity_image(Accessor<dev, int, 2>::Get(disparity_image)) {}
 
-  __device__ __host__ void operator()(int row, int col) {
+  __device__ __host__ void operator()(int row, int col) {	  
     scalar_t min_cost = 9999999;
     int won_disparity = 0;
-
+	
 	const auto disparity_costs = cost_volume[row][col];
 	const auto max_disparaty = cost_volume.size(2);
 	const auto width = cost_volume.size(1);

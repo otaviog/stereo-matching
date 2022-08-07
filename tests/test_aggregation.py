@@ -8,25 +8,6 @@ import matplotlib.pyplot as plt
 import stereomatch
 
 
-class TestWinnersTakeAll:
-    @staticmethod
-    def test_cpu(ssd_cost):
-        matcher = stereomatch.aggregation.WinnerTakesAll()
-        depthmap = matcher.estimate(ssd_cost.volume).cpu().numpy()
-
-        fig = plt.figure()
-        plt.imshow(depthmap)
-        plt.savefig('wta-cpu.png')
-
-    @staticmethod
-    def test_benchmark_wta(ssd_cost, benchmark):
-        matcher = stereomatch.aggregation.WinnerTakesAll()
-        benchmark(matcher.estimate, ssd_cost.volume)
-
-    @staticmethod
-    def test_benchmark_torch(ssd_cost, benchmark):
-        benchmark(torch.argmax, ssd_cost.volume, 2)
-
 
 class TestDynamicProgramming:
     @staticmethod
