@@ -28,10 +28,14 @@ def test_gpu(ssd_cost):
     """
     Tests winners take all (GPU implementation).
     """
-    cpu_result = _test(ssd_cost)
+
     gpu_result = _test(ssd_cost.to("cuda:0"))
 
-    torch.testing.assert_allclose(cpu_result, gpu_result.cpu())
+    sample_volume = torch.arange(300*300*128).reshape(300, 300, 128).float()
+    matcher = stereomatch.aggregation.WinnerTakesAll()
+    torch.testing.assert_allclose(
+        matcher.estimate(sample_volume),
+        matcher.estimate(sample_volume.to("cuda:0")).cpu())
 
 
 def _benchmark_wta(ssd_cost, benchmark):

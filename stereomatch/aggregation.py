@@ -8,6 +8,7 @@ class WinnerTakesAll:
         disparity_img = torch.empty(
             cost_volume.size(0), cost_volume.size(1),
             dtype=torch.int32, device=cost_volume.device)
+
         _AggregationOps.run_winners_take_all(cost_volume, disparity_img)
         return disparity_img
 

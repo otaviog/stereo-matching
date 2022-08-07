@@ -36,7 +36,7 @@ def ssd_cost():
         np.array(Image.open(image_base_dir / "im6.png").convert('L')))
 
     cost_volume = stereomatch.cost.ssd(
-        left_image, right_image, 100)
+        left_image, right_image, 128)
 
     cache_file.parent.mkdir(exist_ok=True, parents=True)
     torch.save(cost_volume, str(cache_file))

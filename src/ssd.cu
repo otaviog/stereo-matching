@@ -5,6 +5,7 @@
 #include "accessor.hpp"
 #include "check.hpp"
 #include "kernel.hpp"
+#include "math.hpp"
 
 using namespace std;
 
@@ -32,7 +33,7 @@ struct SSDKernel {
 	const auto height = cost_volume.size(0);
     for (auto disp = 0; disp < max_disparity; ++disp) {
       if (col - disp < 0) {
-		cost_volume[row][col][disp] = 999999.0;
+		cost_volume[row][col][disp] = NumericLimits<scalar_t>::infinity();
 		continue;
         // return;
       }
