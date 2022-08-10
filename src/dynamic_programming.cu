@@ -10,34 +10,38 @@
 namespace stereomatch {
 
 template <typename scalar_t>
-struct ComputePathCPUKernel {
+struct ExpandPathsKernelCPU {
   const torch::TensorAccessor<scalar_t, 3> cost_volume;
   torch::TensorAccessor<int8_t, 3> path_volume;
-  torch::TensorAccessor<scalar_t, 2> disp_costsum_per_row;
+  torch::TensorAccessor<scalar_t, 2> row_final_costs;
 
-  ComputePathCPUKernel(const torch::Tensor &cost_volume,
-                       torch::Tensor path_volume,
-                       torch::Tensor disp_costsum_per_row)
+  ExpandPathsKernelCPU(const torch::Tensor &cost_volume,
+                       torch::Tensor path_volume, torch::Tensor row_final_costs)
       : cost_volume(cost_volume.accessor<scalar_t, 3>()),
         path_volume(path_volume.accessor<int8_t, 3>()),
-        disp_costsum_per_row(disp_costsum_per_row.accessor<scalar_t, 2>()) {}
+        row_final_costs(row_final_costs.accessor<scalar_t, 2>()) {}
 
   void operator()(int row) {
-    std::unique_ptr<scalar_t[]> previous_col_cost(
-        new scalar_t[cost_volume.size(0)]);
-    for (int disp = 0; disp < cost_volume.size(0); disp++) {
+    const auto max_disparity = cost_volume.size(2);
+
+    std::unique_ptr<scalar_t[]> previous_col_cost(new scalar_t[max_disparity]);
+
+    for (int disp = 0; disp < max_disparity; disp++) {
       path_volume[disp][row][0] = 0;
       previous_col_cost[disp] = cost_volume[disp][row][0];
     }
 
-    for (int col = 1; col < cost_volume.size(2); col++) {
-      for (int disp = 0; disp < cost_volume.size(0); disp++) {
-        const scalar_t current_cost = cost_volume[disp][row][col];
+    const auto width = cost_volume.size(1);
+    for (int col = 1; col < width; col++) {
+      const auto cost_channel_acc = cost_volume[row][col];
+      auto path_channel_acc = path_volume[row][col];
+      for (int disp = 0; disp < max_disparity; disp++) {
+        const scalar_t current_cost = cost_channel_acc[disp];
         const scalar_t cost1 = (disp > 0)
                                    ? previous_col_cost[disp - 1]
                                    : std::numeric_limits<scalar_t>::infinity();
         const scalar_t cost2 = previous_col_cost[disp];
-        const scalar_t cost3 = (disp < cost_volume.size(0) - 1)
+        const scalar_t cost3 = (disp < max_disparity - 1)
                                    ? previous_col_cost[disp + 1]
                                    : std::numeric_limits<scalar_t>::infinity();
 
@@ -54,45 +58,48 @@ struct ComputePathCPUKernel {
           path_direction = 1;
         }
 
-        path_volume[disp][row][col] = path_direction;
+        path_channel_acc[disp] = path_direction;
         previous_col_cost[disp] = current_cost + min_cost;
-        disp_costsum_per_row[disp][row] = previous_col_cost[disp];
       }
     }
+
+    for (int disp = 0; disp < max_disparity; ++disp)
+      row_final_costs[row][disp] = previous_col_cost[disp];
   }
 };
 
 template <typename scalar_t>
-struct ComputePathCUDAKernel {
+struct ExpandPathsKernelCUDA {
   const typename Accessor<kCUDA, scalar_t, 3>::T cost_volume;
   typename Accessor<kCUDA, int8_t, 3>::T path_volume;
-  typename Accessor<kCUDA, scalar_t, 2>::T disp_costsum_per_row;
+  typename Accessor<kCUDA, scalar_t, 2>::T row_final_costs;
 
-  ComputePathCUDAKernel(const torch::Tensor &cost_volume,
+  ExpandPathsKernelCUDA(const torch::Tensor &cost_volume,
                         torch::Tensor path_volume,
-                        torch::Tensor disp_costsum_per_row)
+                        torch::Tensor row_final_costs)
       : cost_volume(Accessor<kCUDA, scalar_t, 3>::Get(cost_volume)),
         path_volume(Accessor<kCUDA, int8_t, 3>::Get(path_volume)),
-        disp_costsum_per_row(
-            Accessor<kCUDA, scalar_t, 2>::Get(disp_costsum_per_row)) {}
+        row_final_costs(Accessor<kCUDA, scalar_t, 2>::Get(row_final_costs)) {}
   __device__ void operator()(int row, int disp) {
     __shared__ float shr_previous_col_cost[MAX_DISP + 2];
+    const auto max_disparity = cost_volume.size(2);
+
     if (disp == 0) {
       // pad the border with infinity for avoiding checking disparity
       // indices.
       shr_previous_col_cost[0] = NumericLimits<scalar_t>::infinity();
-      shr_previous_col_cost[cost_volume.size(0) + 1] =
+      shr_previous_col_cost[max_disparity + 1] =
           NumericLimits<scalar_t>::infinity();
     }
 
-    shr_previous_col_cost[disp + 1] = cost_volume[disp][row][0];
+    shr_previous_col_cost[disp + 1] = cost_volume[row][0][disp];
     __syncthreads();
 
     path_volume[disp][row][0] = 0;
 
-    for (ushort col = 1; col < cost_volume.size(2); col++) {
-      const scalar_t current_cost = cost_volume[disp][row][col];
-
+    const auto width = cost_volume.size(1);
+    for (ushort col = 1; col < width; col++) {
+      const scalar_t current_cost = cost_volume[row][col][disp];
       __syncthreads();
       const scalar_t cost1 = shr_previous_col_cost[disp];
       const scalar_t cost2 = shr_previous_col_cost[disp + 1];
@@ -111,13 +118,13 @@ struct ComputePathCUDAKernel {
         path_direction = 1;
       }
 
-      path_volume[disp][row][col] = path_direction;
+      path_volume[row][col][disp] = path_direction;
 
       __syncthreads();
       shr_previous_col_cost[disp + 1] = current_cost + min_cost;
     }
 
-    disp_costsum_per_row[disp][row] = shr_previous_col_cost[disp + 1];
+    row_final_costs[disp][row] = shr_previous_col_cost[disp + 1];
   }
 };
 
@@ -131,81 +138,85 @@ static __global__ void ExecuteDynamicProgrammingKernel(Kernel kern, int height,
   }
 }
 
+static constexpr int32_t clamp(int32_t val, int32_t min, int32_t max) {
+  if (val < min) {
+    return min;
+  } else if (val > max) {
+    return max;
+  } else {
+    return val;
+  }
+}
+
 template <Device dev, typename scalar_t>
-struct ReducePathKernel {
+struct ReducePathsKernel {
   const typename Accessor<dev, int8_t, 3>::T path_volume;
-  const typename Accessor<dev, scalar_t, 2>::T disp_costsum_per_row;
+  const typename Accessor<dev, int64_t, 1>::T end_disparities;
   typename Accessor<dev, int32_t, 2>::T disparity_image;
 
-  ReducePathKernel(const torch::Tensor &path_volume,
-                   const torch::Tensor &disp_costsum_per_row,
-                   torch::Tensor &disparity_image)
+  ReducePathsKernel(const torch::Tensor &path_volume,
+                    const torch::Tensor &end_disparities,
+                    torch::Tensor &disparity_image)
       : path_volume(Accessor<dev, int8_t, 3>::Get(path_volume)),
-        disp_costsum_per_row(
-            Accessor<dev, scalar_t, 2>::Get(disp_costsum_per_row)),
+        end_disparities(Accessor<dev, int64_t, 1>::Get(end_disparities)),
         disparity_image(Accessor<dev, int32_t, 2>::Get(disparity_image)) {}
 
   __device__ __host__ void operator()(int row) {
-    int min_disparity = 0;
-    float min_cost = disp_costsum_per_row[0][row];
+    const auto width = path_volume.size(1);
+    const auto max_disparity = path_volume.size(2);
+    auto current_disp = end_disparities[row];
 
-    const auto max_disp = path_volume.size(0);
-    for (int disp = 1; disp < max_disp; disp++) {
-      const float current_cost = disp_costsum_per_row[disp][row];
-      if (current_cost < min_cost) {
-        min_disparity = disp;
-        min_cost = current_cost;
-      }
-    }
+    auto disp_image_row_acc = disparity_image[row];
+    disp_image_row_acc[width - 1] = current_disp;
 
-    disparity_image[row][disparity_image.size(1) - 1] = min_disparity;
+    auto path_volume_row_acc = path_volume[row];
 
-    for (int col = path_volume.size(2) - 1; col >= 0; col--) {
-      const int8_t path_direction = path_volume[min_disparity][row][col];
-      const int new_disparity = min_disparity + path_direction;
-
-      if (new_disparity >= 0 && new_disparity < path_volume.size(0)) {
-        min_disparity = new_disparity;
-      }
-
-      disparity_image[row][col] = min_disparity;
+    for (auto col = width - 2; col >= 0; col--) {
+      const auto path_direction = path_volume_row_acc[col][current_disp];
+      current_disp = clamp(current_disp + path_direction, 0, max_disparity - 1);
+      disparity_image[row][col] = current_disp;
     }
   }
 };
 
 void AggregationModule::RunDynamicProgramming(const torch::Tensor &cost_volume,
-                                           torch::Tensor path_volume,
-                                           torch::Tensor disp_costsum_per_row,
-                                           torch::Tensor disparity_image) {
+                                              torch::Tensor path_volume,
+                                              torch::Tensor row_final_costs,
+                                              torch::Tensor disparity_image) {
   const auto ref_device = cost_volume.device();
 
   STM_CHECK_DEVICE(ref_device, path_volume);
-  STM_CHECK_DEVICE(ref_device, disp_costsum_per_row);
+  STM_CHECK_DEVICE(ref_device, row_final_costs);
   STM_CHECK_DEVICE(ref_device, disparity_image);
+
+  const auto height = cost_volume.size(0);
+  const auto width = cost_volume.size(1);
+  const auto max_disparity = cost_volume.size(2);
 
   if (ref_device.is_cuda()) {
     AT_DISPATCH_FLOATING_TYPES(
-        cost_volume.scalar_type(), "RunDynamicprogramming", ([&] {
-          ComputePathCUDAKernel<scalar_t> path_kernel(cost_volume, path_volume,
-                                                      disp_costsum_per_row);
-          ExecuteDynamicProgrammingKernel<<<cost_volume.size(1),
-                                            cost_volume.size(0)>>>(
-              path_kernel, cost_volume.size(1), cost_volume.size(0));
+        cost_volume.scalar_type(), "RunDynamicprogrammingGPU", ([&] {
+          ExpandPathsKernelCUDA<scalar_t> path_kernel(cost_volume, path_volume,
+                                                      row_final_costs);
+          ExecuteDynamicProgrammingKernel<<<height, max_disparity>>>(
+              path_kernel, height, max_disparity);
 
-          ReducePathKernel<kCUDA, scalar_t> reduce_kernel(
-              path_volume, disp_costsum_per_row, disparity_image);
-          KernelLauncher<kCUDA>::Launch1D(reduce_kernel, cost_volume.size(1));
+          auto end_disparities = torch::argmin(row_final_costs, {1});
+          ReducePathsKernel<kCUDA, scalar_t> reduce_kernel(
+              path_volume, end_disparities, disparity_image);
+          KernelLauncher<kCUDA>::Launch1D(reduce_kernel, height);
         }));
   } else {
     AT_DISPATCH_FLOATING_TYPES(
-        cost_volume.scalar_type(), "RunDynamicProgramming", ([&] {
-          ComputePathCPUKernel<scalar_t> path_kernel(cost_volume, path_volume,
-                                                     disp_costsum_per_row);
-          KernelLauncher<kCPU>::Launch1D(path_kernel, cost_volume.size(1));
-
-          ReducePathKernel<kCPU, scalar_t> reduce_kernel(
-              path_volume, disp_costsum_per_row, disparity_image);
-          KernelLauncher<kCPU>::Launch1D(reduce_kernel, cost_volume.size(1));
+        cost_volume.scalar_type(), "DynamicProgrammingCPU", ([&] {
+          ExpandPathsKernelCPU<scalar_t> path_kernel(cost_volume, path_volume,
+                                                     row_final_costs);
+          KernelLauncher<kCPU>::Launch1D(path_kernel, height);
+          
+          auto end_disparities = torch::argmin(row_final_costs, {1});
+          ReducePathsKernel<kCPU, scalar_t> reduce_kernel(
+              path_volume, end_disparities, disparity_image);
+          KernelLauncher<kCPU>::Launch1D(reduce_kernel, height);
         }));
   }
 }

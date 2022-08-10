@@ -40,3 +40,34 @@ def test_ssd(images_rgb):
     torch.testing.assert_allclose(cost_volume_gpu.cpu(), cost_volume_cpu)
     torch.testing.assert_allclose(cost_volume_tex.cpu(), cost_volume_cpu)
 
+
+@pytest.mark.benchmark(
+    group="cost"
+)
+def test_benchmark_ssd(images_rgb, benchmark):
+    left, right = images_rgb[0].cuda(), images_rgb[1].cuda()
+
+    benchmark(ssd, left, right, 32)
+
+
+@pytest.mark.benchmark(
+    group="cost"
+)
+def test_benchmark_ssd_texture(images_rgb, benchmark):
+    left, right = images_rgb
+    left = CUDATexture.from_tensor(left, normalized_coords=False)
+    right = CUDATexture.from_tensor(right, normalized_coords=False)
+    benchmark(ssd_texture, left, right, 32)
+
+
+@pytest.mark.benchmark(
+    group="cost"
+)
+def test_benchmark_upload_ssd_texture(images_rgb, benchmark):
+    left, right = images_rgb
+
+    def _target(left=left, right=right):
+        left = CUDATexture.from_tensor(left, normalized_coords=False)
+        right = CUDATexture.from_tensor(right, normalized_coords=False)
+        ssd_texture(left, right, 32)
+    benchmark(_target)

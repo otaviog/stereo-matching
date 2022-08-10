@@ -51,24 +51,18 @@ struct WTAKernel<kCUDA, scalar_t> {
         disparity_image(Accessor<kCUDA, int, 2>::Get(disparity_image)) {}
 
   __device__ void operator()(int row, int col, int disp) {
-    __shared__ scalar_t disparity_costs[256];
-    __shared__ int indices[256];
+    extern __shared__ __align__(sizeof(float)) uint8_t _shared_memory[];
+	const auto max_disparaty = cost_volume.size(2);
+
+	scalar_t *disparity_costs = (scalar_t*)_shared_memory;
+	int *indices = (int*)&_shared_memory[max_disparaty*sizeof(scalar_t)];
 
     disparity_costs[disp] = cost_volume[row][col][disp];
     indices[disp] = disp;
 
     __syncthreads();
     const auto width = cost_volume.size(1);
-
         
-    //const auto max_disparaty = min(cost_volume.size(2), width -
-    //col);
-
-    // 100 >> 1 = 50
-    // 49
-    // 50 + 49 = 99
-    // 
-    const auto max_disparaty = cost_volume.size(2);
     for (auto s = max_disparaty >> 1; s >= 1; s = s >> 1) {
       if (disp < s) {
         const auto rhs_idx = s + disp;
@@ -106,7 +100,9 @@ void AggregationModule::RunWinnersTakeAll(const torch::Tensor &cost_volume,
     AT_DISPATCH_FLOATING_TYPES(
         cost_volume.scalar_type(), "RunWinnersTakeAll", [&] {
           WTAKernel<kCUDA, scalar_t> kernel(cost_volume, disparity_image);
-          LaunchKernel<<<dim3(width, height), max_disparaty>>>(
+          LaunchKernel<<<dim3(width, height), max_disparaty,
+			sizeof(scalar_t)*max_disparaty + sizeof(int)*max_disparaty
+					  >>>(
               kernel, width, height, max_disparaty);
         });
   } else {

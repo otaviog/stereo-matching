@@ -24,18 +24,27 @@ def test_cpu(ssd_cost):
     _test(ssd_cost)
 
 
-def test_gpu(ssd_cost):
+def test_gpu():
     """
     Tests winners take all (GPU implementation).
     """
 
-    gpu_result = _test(ssd_cost.to("cuda:0"))
-
     sample_volume = torch.arange(300*300*128).reshape(300, 300, 128).float()
     matcher = stereomatch.aggregation.WinnerTakesAll()
-    torch.testing.assert_allclose(
-        matcher.estimate(sample_volume),
-        matcher.estimate(sample_volume.to("cuda:0")).cpu())
+
+    lfs = matcher.estimate(sample_volume)
+    rhs = matcher.estimate(sample_volume.to("cuda:0")).cpu()
+
+    torch.testing.assert_allclose(lfs, rhs)
+
+
+def test_should_throw_nonpower2_gpu():
+    """
+    Expects that passing a nonpower of 2 disparity volume it throws an error.
+    """
+    with pytest.raises(RuntimeError):
+        stereomatch.aggregation.WinnerTakesAll().estimate(
+            torch.arange(300*300*128).reshape(300, 300, 100).float().cuda())
 
 
 def _benchmark_wta(ssd_cost, benchmark):

@@ -2,6 +2,7 @@
 Tests the semiglobal match
 """
 
+import pytest
 import matplotlib.pyplot as plt
 
 import stereomatch
@@ -29,8 +30,16 @@ def test_cpu(ssd_cost):
 def test_gpu(ssd_cost):
     _test_impl(ssd_cost.to("cuda:0"), "cuda")
 
-
-def test_benchmark_sgm(ssd_cost, benchmark):
+@pytest.mark.benchmark(
+    group="aggregation")
+def test_benchmark_cpu_sgm(ssd_cost, benchmark):
     matcher = stereomatch.aggregation.SemiglobalAggregation()
     benchmark(matcher.estimate,
               ssd_cost.volume, ssd_cost.left_image.float())
+
+@pytest.mark.benchmark(
+    group="aggregation")
+def test_benchmark_gpu_sgm(ssd_cost, benchmark):
+    matcher = stereomatch.aggregation.SemiglobalAggregation()
+    benchmark(matcher.estimate,
+              ssd_cost.volume.cuda(), ssd_cost.left_image.float().cuda())
