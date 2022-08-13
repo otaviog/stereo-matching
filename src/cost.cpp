@@ -10,6 +10,7 @@ void CostOps::RegisterPybind(pybind11::module &m) {
       .def_static(
           "compute_ssd",
           pybind11::overload_cast<const CUDATexture &, const CUDATexture &,
-                                  torch::Tensor, int>(&CostOps::ComputeSSD));
+                                  torch::Tensor, int>(&CostOps::ComputeSSD))
+      .def_static("compute_birchfield", &CostOps::ComputeBirchfield);
 }
 }  // namespace stereomatch

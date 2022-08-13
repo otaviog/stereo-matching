@@ -3,7 +3,7 @@
 #include "accessor.hpp"
 #include "check.hpp"
 #include "kernel.hpp"
-#include "math.hpp"
+#include "numeric.hpp"
 
 #define MAX_DISP 1048
 

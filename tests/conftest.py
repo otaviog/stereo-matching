@@ -8,6 +8,7 @@ import torch
 
 import stereomatch
 
+
 @dataclasses.dataclass
 class CostFixture:
     volume: torch.Tensor
@@ -41,3 +42,7 @@ def ssd_cost():
     cache_file.parent.mkdir(exist_ok=True, parents=True)
     torch.save(cost_volume, str(cache_file))
     return CostFixture(volume=cost_volume, left_image=left_image)
+
+
+def pytest_configure():
+    pytest.STM_MAX_DISPARITY = 32

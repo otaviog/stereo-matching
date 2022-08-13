@@ -7,7 +7,7 @@ from PIL import Image
 import torch
 
 from stereomatch.cuda_texture import CUDATexture
-from stereomatch.cost import ssd_texture, ssd
+from stereomatch.cost import ssd_texture, ssd, birchfield
 
 
 @pytest.fixture
@@ -27,15 +27,14 @@ def images_rgb():
 
 def test_ssd(images_rgb):
     left, right = images_rgb
-    max_disparity = 20
     print("use texture")
     tex1 = CUDATexture.from_tensor(left, normalized_coords=False)
     tex2 = CUDATexture.from_tensor(right, normalized_coords=False)
-    cost_volume_tex = ssd_texture(tex1, tex2, max_disparity)
+    cost_volume_tex = ssd_texture(tex1, tex2, pytest.STM_MAX_DISPARITY)
     print("done texture")
-    cost_volume_gpu = ssd(left.cuda(), right.cuda(), max_disparity)
+    cost_volume_gpu = ssd(left.cuda(), right.cuda(), pytest.STM_MAX_DISPARITY)
 
-    cost_volume_cpu = ssd(left, right, max_disparity)
+    cost_volume_cpu = ssd(left, right, pytest.STM_MAX_DISPARITY)
 
     torch.testing.assert_allclose(cost_volume_gpu.cpu(), cost_volume_cpu)
     torch.testing.assert_allclose(cost_volume_tex.cpu(), cost_volume_cpu)
@@ -47,7 +46,7 @@ def test_ssd(images_rgb):
 def test_benchmark_ssd(images_rgb, benchmark):
     left, right = images_rgb[0].cuda(), images_rgb[1].cuda()
 
-    benchmark(ssd, left, right, 32)
+    benchmark(ssd, left, right, pytest.STM_MAX_DISPARITY)
 
 
 @pytest.mark.benchmark(
@@ -57,7 +56,7 @@ def test_benchmark_ssd_texture(images_rgb, benchmark):
     left, right = images_rgb
     left = CUDATexture.from_tensor(left, normalized_coords=False)
     right = CUDATexture.from_tensor(right, normalized_coords=False)
-    benchmark(ssd_texture, left, right, 32)
+    benchmark(ssd_texture, left, right, pytest.STM_MAX_DISPARITY)
 
 
 @pytest.mark.benchmark(
@@ -69,5 +68,18 @@ def test_benchmark_upload_ssd_texture(images_rgb, benchmark):
     def _target(left=left, right=right):
         left = CUDATexture.from_tensor(left, normalized_coords=False)
         right = CUDATexture.from_tensor(right, normalized_coords=False)
-        ssd_texture(left, right, 32)
+        ssd_texture(left, right, pytest.STM_MAX_DISPARITY)
     benchmark(_target)
+
+
+def test_birchfield(images_rgb):
+    left, right = images_rgb[0].cuda(), images_rgb[1].cuda()
+    cost_volume = birchfield(left, right, pytest.STM_MAX_DISPARITY)
+
+
+@pytest.mark.benchmark(
+    group="cost"
+)
+def test_benchmark_birchfield(images_rgb, benchmark):
+    left, right = images_rgb[0].cuda(), images_rgb[1].cuda()
+    benchmark(ssd, left, right, pytest.STM_MAX_DISPARITY)

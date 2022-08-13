@@ -23,13 +23,31 @@ def _ssd_texture_wrapper(left_image: torch.Tensor, right_image: torch.Tensor,
 
 COST_METHODS = {
     "ssd": stereomatch.cost.ssd,
-    "ssd-texture": _ssd_texture_wrapper
+    "ssd-texture": _ssd_texture_wrapper,
+    "birchfield": stereomatch.cost.birchfield
 }
 
 AGGREGATION_METHODS = {
     "wta": stereomatch.aggregation.WinnerTakesAll,
     "dyn": stereomatch.aggregation.DynamicProgramming
 }
+
+
+class Pipeline:
+    def __init__(self, cost, aggregation, max_disparity):
+        self.cost = cost
+        self.aggregation = aggregation
+        self.max_disparity = max_disparity
+
+        self._cost_volume = None
+        self._disparity_image = None
+
+    def estimate(self, left_image, right_image):
+        self._cost_volume = self.cost(left_image, right_image,
+                                      self.max_disparity, self._cost_volume)
+        self._disparity_image = self.aggregation(self._cost_volume,
+                                                 self._disparity_image)
+        return self._disparity_image
 
 
 def _main():
@@ -50,7 +68,7 @@ def _main():
 
     cost_method = COST_METHODS[args.cost_method]
     aggregation_method = AGGREGATION_METHODS[args.aggregation_method]()
-        
+
     left_image = torch.from_numpy(
         np.array(Image.open(args.left_image).convert('L')))
     right_image = torch.from_numpy(

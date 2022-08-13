@@ -16,7 +16,7 @@
 #include "accessor.hpp"
 #include "aggregation.hpp"
 #include "check.hpp"
-#include "math.hpp"
+#include "numeric.hpp"
 
 #define SG_MAX_DISP 256
 
@@ -31,11 +31,6 @@ class CUDAArray {
  private:
   data_t* array_;
 };
-
-template <typename T>
-constexpr T get_min(T v1, T v2, T v3, T v4) {
-  return fmin(v1, fmin(v2, fmin(v3, v4)));
-}
                      
 template <typename scalar_t>
 inline __device__ scalar_t GetCost(scalar_t cost, scalar_t keep_disp_cost,

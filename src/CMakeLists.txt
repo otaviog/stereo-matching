@@ -8,7 +8,8 @@ cuda_add_library(stereomatch
   cuda_texture.cu
   # Costs
   cost.cpp
-  ssd.cu  
+  ssd.cu
+  birchfield_cost.cu
   # Aggregations
   aggregation.cpp
   winners_take_all.cu

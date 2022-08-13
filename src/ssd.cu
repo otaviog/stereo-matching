@@ -5,7 +5,7 @@
 #include "accessor.hpp"
 #include "check.hpp"
 #include "kernel.hpp"
-#include "math.hpp"
+#include "numeric.hpp"
 
 using namespace std;
 

@@ -8,6 +8,7 @@ import torch
 from ._cstereomatch import CostOps as _CostOps
 from ._common import empty_tensor
 
+
 def ssd(left_image: torch.Tensor, right_image: torch.Tensor, max_disparity: int,
         kernel_size: int = 7, cost_volume: Optional[torch.Tensor] = None) -> torch.Tensor:
     """
@@ -34,12 +35,24 @@ def ssd(left_image: torch.Tensor, right_image: torch.Tensor, max_disparity: int,
     return cost_volume
 
 
-def ssd_texture(left_image, right_image, max_disparity, kernel_size=7, cost_volume: Optional[torch.Tensor] = None):
+def ssd_texture(left_image, right_image, max_disparity, kernel_size=7,
+                cost_volume: Optional[torch.Tensor] = None) -> torch.Tensor:
     cost_volume = empty_tensor(left_image.height, left_image.width,
                                max_disparity,
                                dtype=torch.float32,
                                device=torch.device("cuda:0"),
                                reuse_tensor=cost_volume)
     _CostOps.compute_ssd(left_image, right_image, cost_volume, kernel_size)
+
+    return cost_volume
+
+
+def birchfield(left_image: torch.Tensor, right_image: torch.Tensor,
+               max_disparity: int, cost_volume: Optional[torch.Tensor] = None) -> torch.Tensor:
+    cost_volume = empty_tensor(left_image.size(0), left_image.size(1), max_disparity,
+                               dtype=torch.float32,
+                               device=torch.device("cuda:0"),
+                               reuse_tensor=cost_volume)
+    _CostOps.compute_birchfield(left_image.float()/255, right_image.float()/255, cost_volume, 4)
 
     return cost_volume

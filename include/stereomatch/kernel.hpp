@@ -66,6 +66,15 @@ struct KernelLauncher<kCUDA> {
     CudaCheck();
     CudaSafeCall(cudaDeviceSynchronize());
   }
+
+  template <typename Kernel>
+  static void Launch2DSharedMem(Kernel &kern, int width, int height,
+                                size_t shared_mem_size) {
+    CudaKernelDims kl = Get2DKernelDims(width, height);
+    Exec2DKernel<<<kl.grid, kl.block, shared_mem_size>>>(kern, width, height);
+    CudaCheck();
+    CudaSafeCall(cudaDeviceSynchronize());
+  }
 };
 #endif
 
