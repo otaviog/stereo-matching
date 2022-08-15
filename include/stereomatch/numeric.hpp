@@ -25,6 +25,20 @@ struct NumericLimits<double> {
     return HUGE_VAL;
   }
 };
+
+template <>
+struct NumericLimits<int32_t> {
+  static constexpr __device__ __host__ int32_t infinity() noexcept {
+    return INT_MAX;
+  }
+};
+
+template <>
+struct NumericLimits<uint8_t> {
+  static constexpr __device__ __host__ uint8_t infinity() noexcept {
+    return 255;
+  }
+};
 #else
 template <typename scalar_t>
 struct NumericLimits {

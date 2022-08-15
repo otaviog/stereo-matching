@@ -3,11 +3,34 @@ from typing import Optional
 import torch
 
 
+def _are_tensors_incompatible(reuse_tensor, sizes, dtype, device):
+    return (reuse_tensor is None or reuse_tensor.size() != sizes
+            or dtype != reuse_tensor.dtype
+            or device != reuse_tensor.device)
+
+
 def empty_tensor(*sizes, dtype: torch.dtype = torch.float32,
                  reuse_tensor: Optional[torch.Tensor] = None,
                  device: torch.device = torch.device("cpu")) -> torch.Tensor:
-    if reuse_tensor is None or (reuse_tensor.size() != sizes
-                                or dtype != reuse_tensor.dtype
-                                or dtype != reuse_tensor.device):
+    if _are_tensors_incompatible(reuse_tensor, sizes, dtype, device):
         return torch.empty(sizes, dtype=dtype, device=device)
+    return reuse_tensor
+
+
+def zeros_tensor_like(base_tensor, reuse_tensor: Optional[torch.Tensor] = None) -> torch.Tensor:
+    """
+    Returns a `torch.zeros_like` tensor trying to reuse the `reuse_tensor` if possible.
+
+    Args:
+        base_tensor: Creates (or reuse) a tensor with the same sizes, type and in the same device.
+        reuse_tensor: If possible, it will fill with zeros this tensor and return it.
+
+    Returns:
+        A zeros tensor. If both tensors are compatible, then it will return `reuse_tensor`. 
+    """
+    if _are_tensors_incompatible(reuse_tensor, base_tensor.size(),
+                                 base_tensor.dtype, base_tensor.device):
+        return torch.zeros_like(base_tensor)
+
+    reuse_tensor.zeros_()
     return reuse_tensor

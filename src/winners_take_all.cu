@@ -1,4 +1,4 @@
-#include "aggregation.hpp"
+#include "disparity_reduce.hpp"
 
 #include "accessor.hpp"
 #include "check.hpp"
@@ -87,7 +87,7 @@ __global__ void LaunchKernel(WTAKernel<kCUDA, scalar_t> kernel, int width,
   kernel(blockIdx.y, blockIdx.x, threadIdx.x);
 }
 
-void AggregationModule::RunWinnersTakeAll(const torch::Tensor &cost_volume,
+void DisparityReduceOps::RunWinnersTakeAll(const torch::Tensor &cost_volume,
                                           torch::Tensor disparity_image) {
   const auto ref_device = cost_volume.device();
 

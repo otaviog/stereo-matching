@@ -11,31 +11,44 @@ import matplotlib.pyplot as plt
 import imageio
 
 import stereomatch
+from stereomatch.cost import ssd, ssd_texture, birchfield
+from stereomatch.aggregation import WinnerTakesAll, DynamicProgramming, SemiglobalAggregation
 
 
-def _ssd_texture_wrapper(left_image: torch.Tensor, right_image: torch.Tensor,
-                         max_disparity: int):
-    return stereomatch.cost.ssd_texture(
+def _texture_wrapper(cost_function, left_image: torch.Tensor, right_image: torch.Tensor,
+                     max_disparity: int):
+    return cost_function(
         stereomatch.cuda_texture.CUDATexture.from_tensor(left_image.cuda()),
         stereomatch.cuda_texture.CUDATexture.from_tensor(right_image.cuda()),
         max_disparity)
 
 
 COST_METHODS = {
-    "ssd": stereomatch.cost.ssd,
-    "ssd-texture": _ssd_texture_wrapper,
-    "birchfield": stereomatch.cost.birchfield
+    "ssd": ssd,
+    "ssd-texture": ssd_texture,
+    "birchfield": birchfield
 }
 
 AGGREGATION_METHODS = {
-    "wta": stereomatch.aggregation.WinnerTakesAll,
-    "dyn": stereomatch.aggregation.DynamicProgramming
+    "wta": WinnerTakesAll,
+    "dyn": DynamicProgramming,
+    "sgm": SemiglobalAggregation,
 }
 
 
 class Pipeline:
     def __init__(self, cost, aggregation, max_disparity):
-        self.cost = cost
+        if cost is (ssd_texture, ):
+            self.cost = lambda left, right, max_disparity: _texture_wrapper(
+                cost, left, right, max_disparity)
+        else:
+            self.cost = cost
+
+        if not isinstance(aggregation, (SemiglobalAggregation)):
+            self.aggregation = lambda left, right, _: aggregation(left, right)
+        else:
+            self.aggregation = aggregation
+
         self.aggregation = aggregation
         self.max_disparity = max_disparity
 

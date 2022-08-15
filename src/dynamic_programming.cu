@@ -1,4 +1,4 @@
-#include "aggregation.hpp"
+#include "disparity_reduce.hpp"
 
 #include "accessor.hpp"
 #include "check.hpp"
@@ -179,7 +179,7 @@ struct ReducePathsKernel {
   }
 };
 
-void AggregationModule::RunDynamicProgramming(const torch::Tensor &cost_volume,
+void DisparityReduceOps::RunDynamicProgramming(const torch::Tensor &cost_volume,
                                               torch::Tensor path_volume,
                                               torch::Tensor row_final_costs,
                                               torch::Tensor disparity_image) {

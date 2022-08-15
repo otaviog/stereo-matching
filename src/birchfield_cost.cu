@@ -58,7 +58,7 @@ struct BirchfieldKernelCUDA {
         const float left_intensity = left_scan_line[lIdx];
         const float right_intensity = right_scan_line[rIdx];
 
-#if 1
+#if 0
         const float laI = 0.5f * (left_intensity + left_scan_line[lIdx - 1]);
         const float lbI = 0.5f * (left_intensity + left_scan_line[lIdx + 1]);
 
@@ -96,7 +96,7 @@ void CostOps::ComputeBirchfield(const torch::Tensor &left_image,
   STM_CHECK_DEVICE(ref_device, cost_volume);
 
   if (ref_device.is_cuda()) {
-    AT_DISPATCH_FLOATING_TYPES(left_image.scalar_type(), "BirchfieldKernel", ([&] {
+    AT_DISPATCH_FLOATING_TYPES(left_image.scalar_type(), "BirchfieldKernel", [&] {
                                  const auto width = cost_volume.size(1);
                                  BirchfieldKernelCUDA<scalar_t, 4> kernel(
                                      left_image, right_image, cost_volume
@@ -106,7 +106,7 @@ void CostOps::ComputeBirchfield(const torch::Tensor &left_image,
                                  KernelLauncher<kCUDA>::Launch2DSharedMem(
                                      kernel, left_image.size(1),
                                      left_image.size(0), ((width + 2) * 2)*sizeof(scalar_t));
-                               }));
+                               });
   } else {
   }
 }

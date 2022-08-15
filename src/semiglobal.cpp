@@ -197,10 +197,10 @@ void RunSemiglobalAggregationGPU(const torch::Tensor &cost_volume,
                                  float penalty1, float penalty2,
                                  torch::Tensor &output_cost_volume);
 
-void AggregationModule::RunSemiglobal(const torch::Tensor &cost_volume,
-                                      const torch::Tensor &left_image,
-                                      float penalty1, float penalty2,
-                                      torch::Tensor &output_cost_volume) {
+void AggregationOps::RunSemiglobal(const torch::Tensor &cost_volume,
+                                   const torch::Tensor &left_image,
+                                   float penalty1, float penalty2,
+                                   torch::Tensor &output_cost_volume) {
   const auto ref_device = cost_volume.device();
   STM_CHECK_DEVICE(ref_device, left_image);
   STM_CHECK_DEVICE(ref_device, output_cost_volume);

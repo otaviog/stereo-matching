@@ -1,5 +1,5 @@
 """
-Tests the dynamic programming aggregation.
+Tests the dynamic programming disparity_reduce.
 """
 
 import pytest
@@ -11,8 +11,8 @@ from viz import save_depthmap
 
 
 def _run_test(cost_volume):
-    matcher = stereomatch.aggregation.DynamicProgramming()
-    depthmap = matcher.estimate(cost_volume)
+    matcher = stereomatch.disparity_reduce.DynamicProgramming()
+    depthmap = matcher(cost_volume)
 
     save_depthmap(depthmap, "dynprog")
     return depthmap
@@ -30,12 +30,12 @@ def test_gpu(ssd_cost):
 
 
 def _benchmark_dynprog(cost_volume, benchmark):
-    matcher = stereomatch.aggregation.DynamicProgramming()
-    benchmark(matcher.estimate, cost_volume)
+    matcher = stereomatch.disparity_reduce.DynamicProgramming()
+    benchmark(matcher, cost_volume)
 
-    
+
 @pytest.mark.benchmark(
-    group="aggregation"
+    group="disparity_reduce"
 )
 def test_benchmark_dynprog_cpu(ssd_cost, benchmark):
     """
@@ -45,7 +45,7 @@ def test_benchmark_dynprog_cpu(ssd_cost, benchmark):
 
 
 @pytest.mark.benchmark(
-    group="aggregation"
+    group="disparity_reduce"
 )
 def test_benchmark_dynprog_gpu(ssd_cost, benchmark):
     """

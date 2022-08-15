@@ -121,29 +121,3 @@ struct KernelLauncher<kCPU> {
 
 }  // namespace stereomatch
 
-#define STM_DISPATCH_KERNEL_FLOATING_TYPES(TYPE, DEVICE, NAME, ...) \
-  if (DEVICE.is_cuda()) {                                           \
-    const Device device = kCUDA;                                    \
-    AT_DISPATCH_FLOATING_TYPES(TYPE, NAME, __VA_ARGS__);            \
-  } else {                                                          \
-    const Device device = kCPU;                                     \
-    AT_DISPATCH_FLOATING_TYPES(TYPE, NAME, __VA_ARGS__);            \
-  }
-
-#define STM_DISPATCH_KERNEL_ALL_TYPES(TYPE, DEVICE, NAME, ...) \
-  if (DEVICE.is_cuda()) {                                      \
-    const Device device = kCUDA;                               \
-    AT_DISPATCH_ALL_TYPES(TYPE, NAME, __VA_ARGS__);            \
-  } else {                                                     \
-    const Device device = kCPU;                                \
-    AT_DISPATCH_ALL_TYPES(TYPE, NAME, __VA_ARGS__);            \
-  }
-
-#define STM_DISPATCH_KERNEL(DEVICE, ...) \
-  if (DEVICE.is_cuda()) {                \
-    const Device device = kCUDA;         \
-    __VA_ARGS__();                       \
-  } else {                               \
-    const Device device = kCPU;          \
-    __VA_ARGS__();                       \
-  }

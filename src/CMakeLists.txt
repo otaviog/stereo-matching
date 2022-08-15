@@ -10,12 +10,14 @@ cuda_add_library(stereomatch
   cost.cpp
   ssd.cu
   birchfield_cost.cu
-  # Aggregations
-  aggregation.cpp
+  # Disparity reduce
   winners_take_all.cu
   dynamic_programming.cu
+  disparity_reduce.cpp
+  # Aggregations
   semiglobal.cu
   semiglobal.cpp
+  aggregation.cpp
 )
 
 

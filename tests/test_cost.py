@@ -1,40 +1,28 @@
-
-from pathlib import Path
+"""
+Unit testing and benchmarking of cost functions.
+"""
 
 import pytest
-import numpy as np
-from PIL import Image
 import torch
 
 from stereomatch.cuda_texture import CUDATexture
-from stereomatch.cost import ssd_texture, ssd, birchfield
+from stereomatch.cost import SSDTexture, SSD, Birchfield
 
-
-@pytest.fixture
-def images_rgb():
-    image_base_dir = Path(__file__).parent.parent / \
-        "test-data/middleburry/teddy/"
-
-    left_image = torch.from_numpy(
-        np.array(Image.open(image_base_dir / "im2.png").convert('L'))).float() / 255.0
-    right_image = torch.from_numpy(
-        np.array(Image.open(image_base_dir / "im6.png").convert('L'))).float() / 255.0
-
-    return left_image, right_image
 
 # pylint: disable=redefined-outer-name
 
 
-def test_ssd(images_rgb):
-    left, right = images_rgb
-    print("use texture")
+def test_ssd(sample_stereo_pair):
+    left, right = sample_stereo_pair
+
     tex1 = CUDATexture.from_tensor(left, normalized_coords=False)
     tex2 = CUDATexture.from_tensor(right, normalized_coords=False)
-    cost_volume_tex = ssd_texture(tex1, tex2, pytest.STM_MAX_DISPARITY)
-    print("done texture")
-    cost_volume_gpu = ssd(left.cuda(), right.cuda(), pytest.STM_MAX_DISPARITY)
+    ssd_texture = SSDTexture(pytest.STM_MAX_DISPARITY)
+    cost_volume_tex = ssd_texture(tex1, tex2)
 
-    cost_volume_cpu = ssd(left, right, pytest.STM_MAX_DISPARITY)
+    ssd = SSD(pytest.STM_MAX_DISPARITY)
+    cost_volume_gpu = ssd(left.cuda(), right.cuda())
+    cost_volume_cpu = ssd(left, right)
 
     torch.testing.assert_allclose(cost_volume_gpu.cpu(), cost_volume_cpu)
     torch.testing.assert_allclose(cost_volume_tex.cpu(), cost_volume_cpu)
@@ -43,43 +31,48 @@ def test_ssd(images_rgb):
 @pytest.mark.benchmark(
     group="cost"
 )
-def test_benchmark_ssd(images_rgb, benchmark):
-    left, right = images_rgb[0].cuda(), images_rgb[1].cuda()
+def test_benchmark_ssd(sample_stereo_pair, benchmark):
+    left, right = sample_stereo_pair[0].cuda(), sample_stereo_pair[1].cuda()
 
-    benchmark(ssd, left, right, pytest.STM_MAX_DISPARITY)
+    ssd = SSD(pytest.STM_MAX_DISPARITY)
+    benchmark(ssd, left, right)
 
 
 @pytest.mark.benchmark(
     group="cost"
 )
-def test_benchmark_ssd_texture(images_rgb, benchmark):
-    left, right = images_rgb
+def test_benchmark_ssd_texture(sample_stereo_pair, benchmark):
+    left, right = sample_stereo_pair
     left = CUDATexture.from_tensor(left, normalized_coords=False)
     right = CUDATexture.from_tensor(right, normalized_coords=False)
-    benchmark(ssd_texture, left, right, pytest.STM_MAX_DISPARITY)
+    ssd_texture = SSDTexture(pytest.STM_MAX_DISPARITY)
+    benchmark(ssd_texture, left, right)
 
 
 @pytest.mark.benchmark(
     group="cost"
 )
-def test_benchmark_upload_ssd_texture(images_rgb, benchmark):
-    left, right = images_rgb
+def test_benchmark_upload_ssd_texture(sample_stereo_pair, benchmark):
+    left, right = sample_stereo_pair
+    ssd_texture = SSDTexture(pytest.STM_MAX_DISPARITY)
 
     def _target(left=left, right=right):
         left = CUDATexture.from_tensor(left, normalized_coords=False)
         right = CUDATexture.from_tensor(right, normalized_coords=False)
-        ssd_texture(left, right, pytest.STM_MAX_DISPARITY)
+        ssd_texture(left, right)
     benchmark(_target)
 
 
-def test_birchfield(images_rgb):
-    left, right = images_rgb[0].cuda(), images_rgb[1].cuda()
-    cost_volume = birchfield(left, right, pytest.STM_MAX_DISPARITY)
+def test_birchfield(sample_stereo_pair):
+    left, right = sample_stereo_pair[0].cuda(), sample_stereo_pair[1].cuda()
+    birchfield = Birchfield(pytest.STM_MAX_DISPARITY)
+    cost_volume = birchfield(left, right)
 
 
 @pytest.mark.benchmark(
     group="cost"
 )
-def test_benchmark_birchfield(images_rgb, benchmark):
-    left, right = images_rgb[0].cuda(), images_rgb[1].cuda()
-    benchmark(ssd, left, right, pytest.STM_MAX_DISPARITY)
+def test_benchmark_birchfield(sample_stereo_pair, benchmark):
+    left, right = sample_stereo_pair[0].cuda(), sample_stereo_pair[1].cuda()
+    birchfield = Birchfield(pytest.STM_MAX_DISPARITY)
+    benchmark(birchfield, left, right)

@@ -19,6 +19,18 @@ class CostFixture:
 
 
 @pytest.fixture
+def sample_stereo_pair():
+    image_base_dir = Path(__file__).parent.parent / \
+        "test-data/middleburry/teddy/"
+
+    left_image = torch.from_numpy(
+        np.array(Image.open(image_base_dir / "im2.png").convert('L'))).float() / 255.0
+    right_image = torch.from_numpy(
+        np.array(Image.open(image_base_dir / "im6.png").convert('L'))).float() / 255.0
+
+    return left_image, right_image
+
+@pytest.fixture
 def ssd_cost():
     cache_file = Path(__file__).parent / \
         "test_cache/cost_volume_teddy.torch"

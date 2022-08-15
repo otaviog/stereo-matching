@@ -11,8 +11,8 @@ from viz import save_depthmap
 
 
 def _test(ssd_cost):
-    matcher = stereomatch.aggregation.WinnerTakesAll()
-    depthmap = matcher.estimate(ssd_cost.volume)
+    matcher = stereomatch.disparity_reduce.WinnerTakesAll()
+    depthmap = matcher(ssd_cost.volume)
     save_depthmap(depthmap, "wta")
     return depthmap
 
@@ -30,10 +30,10 @@ def test_gpu():
     """
 
     sample_volume = torch.arange(300*300*128).reshape(300, 300, 128).float()
-    matcher = stereomatch.aggregation.WinnerTakesAll()
+    matcher = stereomatch.disparity_reduce.WinnerTakesAll()
 
-    lfs = matcher.estimate(sample_volume)
-    rhs = matcher.estimate(sample_volume.to("cuda:0")).cpu()
+    lfs = matcher(sample_volume)
+    rhs = matcher(sample_volume.to("cuda:0")).cpu()
 
     torch.testing.assert_allclose(lfs, rhs)
 
@@ -43,17 +43,17 @@ def test_should_throw_nonpower2_gpu():
     Expects that passing a nonpower of 2 disparity volume it throws an error.
     """
     with pytest.raises(RuntimeError):
-        stereomatch.aggregation.WinnerTakesAll().estimate(
+        stereomatch.disparity_reduce.WinnerTakesAll()(
             torch.arange(300*300*128).reshape(300, 300, 100).float().cuda())
 
 
 def _benchmark_wta(ssd_cost, benchmark):
-    matcher = stereomatch.aggregation.WinnerTakesAll()
-    benchmark(matcher.estimate, ssd_cost.volume)
+    matcher = stereomatch.disparity_reduce.WinnerTakesAll()
+    benchmark(matcher, ssd_cost.volume)
 
 
 @pytest.mark.benchmark(
-    group="aggregation"
+    group="disparity_reduce"
 )
 def test_benchmark_wta_cpu(ssd_cost, benchmark):
     """
@@ -63,7 +63,7 @@ def test_benchmark_wta_cpu(ssd_cost, benchmark):
 
 
 @pytest.mark.benchmark(
-    group="aggregation"
+    group="disparity_reduce"
 )
 def test_benchmark_wta_gpu(ssd_cost, benchmark):
     """
@@ -73,7 +73,7 @@ def test_benchmark_wta_gpu(ssd_cost, benchmark):
 
 
 @pytest.mark.benchmark(
-    group="aggregation"
+    group="disparity_reduce"
 )
 def test_benchmark_wta_with_argmax_cpu(ssd_cost, benchmark):
     """
@@ -83,7 +83,7 @@ def test_benchmark_wta_with_argmax_cpu(ssd_cost, benchmark):
 
 
 @pytest.mark.benchmark(
-    group="aggregation"
+    group="disparity_reduce"
 )
 def test_benchmark_wta_with_argmax_gpu(ssd_cost, benchmark):
     """

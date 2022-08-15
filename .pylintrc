@@ -4,7 +4,7 @@ output-format = colorized
 max-line-length = 100
 ignored-modules = numpy, PurePath
 ignored-classes = numpy, PurePath
-generated-members=numpy.*,torch.*
+generated-members=numpy.*,torch.*,pytest.STM_MAX_DISPARITY
 disable = fixme,
   too-many-instance-attributes,
   too-few-public-methods,
