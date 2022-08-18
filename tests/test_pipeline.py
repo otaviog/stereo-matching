@@ -24,13 +24,13 @@ def test_pipeline(sample_stereo_pair):
                 disp_image = pipeline.estimate(
                     left.to(device), right.to(device))
                 save_depthmap(
-                    disp_image, output_dir / f"{device}-{cost_name}-{disp_name}.png")
+                    disp_image, output_dir / f"{cost_name}-{disp_name}")
 
                 pipeline = Pipeline(cost, disp, aggregation=Semiglobal())
                 pipeline.estimate(left.to(device), right.to(device))
 
                 save_depthmap(
-                    disp_image, output_dir / f"{device}-{cost_name}-sga-{disp_name}.png")
+                    disp_image, output_dir / f"{cost_name}-sga-{disp_name}")
 
 
 def test_should_interchange_device():

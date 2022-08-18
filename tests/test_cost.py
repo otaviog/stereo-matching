@@ -7,6 +7,9 @@ import torch
 
 from stereomatch.cuda_texture import CUDATexture
 from stereomatch.cost import SSDTexture, SSD, Birchfield
+from stereomatch.disparity_reduce import WinnerTakesAll
+
+from viz import save_depthmap
 
 
 # pylint: disable=redefined-outer-name
@@ -65,8 +68,13 @@ def test_benchmark_upload_ssd_texture(sample_stereo_pair, benchmark):
 
 def test_birchfield(sample_stereo_pair):
     left, right = sample_stereo_pair[0].cuda(), sample_stereo_pair[1].cuda()
+    # left, right = sample_stereo_pair[0], sample_stereo_pair[1]
     birchfield = Birchfield(pytest.STM_MAX_DISPARITY)
     cost_volume = birchfield(left, right)
+
+    wta = WinnerTakesAll()
+    disparity_image = wta(cost_volume)
+    save_depthmap(disparity_image, "birchfield-wta")
 
 
 @pytest.mark.benchmark(

@@ -86,9 +86,9 @@ class Birchfield:
                  cost_volume: Optional[torch.Tensor] = None) -> torch.Tensor:
         cost_volume = empty_tensor(left_image.size(0), left_image.size(1), self.max_disparity,
                                    dtype=torch.float32,
-                                   device=torch.device("cuda:0"),
+                                   device=left_image.device,
                                    reuse_tensor=cost_volume)
         _CostOps.compute_birchfield(
-            left_image.float()/255, right_image.float()/255, cost_volume, 4)
+            left_image.float(), right_image.float(), cost_volume, 4)
 
         return cost_volume
