@@ -20,23 +20,27 @@ class CostFixture:
 
 @pytest.fixture
 def sample_stereo_pair():
-    image_base_dir = Path(__file__).parent.parent / \
-        "test-data/middleburry/teddy/"
+    image_base_dir = (Path(__file__).parent.parent /
+                      "test-data/middleburry/teddy/")
 
+    target_size = (512, 256)
     left_image = torch.from_numpy(
-        np.array(Image.open(image_base_dir / "im2.png").convert('L'))).float() / 255.0
+        np.array(Image.open(image_base_dir /
+                            "im2.png").convert('L').resize(target_size))).float() / 255.0
     right_image = torch.from_numpy(
-        np.array(Image.open(image_base_dir / "im6.png").convert('L'))).float() / 255.0
+        np.array(Image.open(image_base_dir /
+                 "im6.png").convert('L').resize(target_size))).float() / 255.0
 
     return left_image, right_image
 
+
 @pytest.fixture
 def ssd_cost():
-    cache_file = Path(__file__).parent / \
-        "test_cache/cost_volume_teddy.torch"
+    cache_file = (Path(__file__).parent /
+                  "test_cache/cost_volume_teddy.torch")
 
-    image_base_dir = Path(__file__).parent.parent / \
-        "test-data/middleburry/teddy/"
+    image_base_dir = (Path(__file__).parent.parent /
+                      "test-data/middleburry/teddy/")
 
     left_image = torch.from_numpy(
         np.array(Image.open(image_base_dir / "im2.png").convert('L')))
@@ -48,8 +52,7 @@ def ssd_cost():
     right_image = torch.from_numpy(
         np.array(Image.open(image_base_dir / "im6.png").convert('L')))
 
-    cost_volume = stereomatch.cost.ssd(
-        left_image, right_image, 128)
+    cost_volume = stereomatch.cost.SSD(128)(left_image, right_image)
 
     cache_file.parent.mkdir(exist_ok=True, parents=True)
     torch.save(cost_volume, str(cache_file))

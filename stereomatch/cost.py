@@ -17,7 +17,8 @@ class SSD:
         kernel_size: The SSD kernel size.
     """
 
-    def __init__(self, max_disparity: int, kernel_size: int = 7, cost_volume_dtype: torch.dtype = torch.float):
+    def __init__(self, max_disparity: int, kernel_size: int = 7,
+                 cost_volume_dtype: torch.dtype = torch.float):
         self.max_disparity = max_disparity
         self.kernel_size = kernel_size
         self.cost_volume_dtype = cost_volume_dtype

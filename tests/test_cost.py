@@ -18,8 +18,8 @@ from viz import save_depthmap
 def test_ssd(sample_stereo_pair):
     left, right = sample_stereo_pair
 
-    tex1 = CUDATexture.from_tensor(left, normalized_coords=False)
-    tex2 = CUDATexture.from_tensor(right, normalized_coords=False)
+    tex1 = CUDATexture.from_tensor(left, normalized_coords=True)
+    tex2 = CUDATexture.from_tensor(right, normalized_coords=True)
     ssd_texture = SSDTexture(pytest.STM_MAX_DISPARITY)
     cost_volume_tex = ssd_texture(tex1, tex2)
 
@@ -31,7 +31,21 @@ def test_ssd(sample_stereo_pair):
     torch.testing.assert_allclose(cost_volume_tex.cpu(), cost_volume_cpu)
 
 
-@pytest.mark.benchmark(
+def test_ssd_texture(sample_stereo_pair):
+    left, right = sample_stereo_pair
+
+    tex1 = CUDATexture.from_tensor(left)
+    tex2 = CUDATexture.from_tensor(right)
+
+    ssd_texture = SSDTexture(pytest.STM_MAX_DISPARITY)
+    cost_volume = ssd_texture(tex1, tex2)
+
+    wta = WinnerTakesAll()
+    disparity_image = wta(cost_volume)
+    save_depthmap(disparity_image, "ssdtexture-wta")
+
+
+@pytest.mark.benchmark1(
     group="cost"
 )
 def test_benchmark_ssd(sample_stereo_pair, benchmark):

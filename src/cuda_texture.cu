@@ -22,10 +22,6 @@ struct CopyTextureTestKernel {
     float width = output_tensor.size(1);
     float height = output_tensor.size(0);
     output_tensor[row][col] =
-        tex2D<scalar_t>(input_texture, float(col) / width, float(row) / height);
-        //tex2D<scalar_t>(input_texture, float(col) / height,
-        //float(row) / width);
-    output_tensor[row][col] =
         tex2D<scalar_t>(input_texture, float(col), float(row));
   }
 };

@@ -18,7 +18,8 @@ def test_pipeline(sample_stereo_pair):
     output_dir = Path("pipeline-out")
     output_dir.mkdir(exist_ok=True)
     for device in ["cpu", "cuda"]:
-        for cost, cost_name in [(SSD(32), "SSD"), (SSDTexture(32), "SSDTexture"), (Birchfield(32), "Birchfield")]:
+        for cost, cost_name in [(SSD(32), "SSD"), (SSDTexture(32), "SSDTexture"),
+                                (Birchfield(32), "Birchfield")]:
             for disp, disp_name in [(WinnerTakesAll(), "wta"), (DynamicProgramming(), "dyn")]:
                 pipeline = Pipeline(cost, disp)
                 disp_image = pipeline.estimate(

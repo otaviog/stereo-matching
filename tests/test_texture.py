@@ -41,10 +41,7 @@ def test_transfers():
     """
     tensor0 = torch.rand(128, 128, 4, dtype=torch.float32)
     tex = CUDATexture.from_tensor(tensor0)
-    print(tex)
     tensor1 = tex.to_tensor()
-    print(tensor0)
-    print(tensor1)
     torch.testing.assert_allclose(tensor0, tensor1.cpu())
 
 
@@ -62,27 +59,26 @@ def test_single_channel():
 def test_access():
     #tensor = (torch.rand(128, 128, device="cuda:0") * 255.0).float()
     #tensor = (torch.rand(512, 128) * 255.0).float().contiguous()
-    tensor = (torch.rand(128, 129) * 255.0).byte().contiguous()
-
+    tensor = (torch.rand(128, 128) * 255.0).byte().contiguous()
     texture = CUDATexture.from_tensor(tensor)
     output_tensor = torch.zeros_like(tensor).cuda()
-    print(str(texture))
     CUDATexture._run_test_kernel(texture, output_tensor)
-    print(output_tensor)
-    print(output_tensor.max())
-
     torch.testing.assert_allclose(output_tensor.cpu(), tensor)
 
+    tensor = (torch.rand(128, 128) * 255.0).float().contiguous()
+    texture = CUDATexture.from_tensor(tensor)
+    output_tensor = torch.zeros_like(tensor).cuda()
+
+    CUDATexture._run_test_kernel(texture, output_tensor)
+    torch.testing.assert_allclose(output_tensor.cpu(), tensor)
 
 def test_kernel2():
-    tensor = (torch.rand(128, 129, device="cuda:0") * 255.0).float()
+    tensor = (torch.rand(128, 128, device="cuda:0") * 255.0).float()
     output_tensor = torch.zeros_like(tensor)
 
     CUDATexture._run_test_kernel2(tensor, output_tensor)
-    print(tensor)
-    print(output_tensor)
-    print(tensor.max())
-    print(output_tensor.max())
+
+    torch.testing.assert_allclose(tensor.cpu(), output_tensor.cpu())
 
 
 def test_completeness():

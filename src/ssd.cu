@@ -99,38 +99,35 @@ struct SSDTextureKernel {
         empty_value(empty_value) {}
 
   __device__ void operator()(int row, int col) {
-    const float heightf = cost_volume.size(0);
-    const float widthf = cost_volume.size(1);
+
     const int height = cost_volume.size(0);
     const int width = cost_volume.size(1);
+
+	const float heightf = float(height);
+    const float widthf = float(width);
+	
     const auto max_disparity = cost_volume.size(2);
 
     for (auto disp = 0; disp < max_disparity; ++disp) {
       if (col - disp < 0) {
-        return;
+		cost_volume[row][col][disp] = NumericLimits<scalar_t>::infinity();
+        continue;
       }
 
       const int row_start = max(row - kernel_size, 0);
-      const int row_end = min(row + kernel_size, int(cost_volume.size(1)));
+      const int row_end = min(row + kernel_size, int(height));
 
       const int col_start =
           abs(min(col - disp - kernel_size, 0)) + col - kernel_size;
-      const int col_end = min(col + kernel_size, int(cost_volume.size(2)));
+      const int col_end = min(col + kernel_size, int(width));
 
       scalar_t cost_value = 0;
       for (int krow = row_start; krow < row_end; ++krow) {
         for (int kcol = col_start; kcol < col_end; ++kcol) {
-#if 0
-          const scalar_t left_intensity =
-              tex2D<float>(left_image.texture, float(kcol) / widthf, float(krow) / heightf);
-          const scalar_t right_intensity = tex2D<float>(
-              right_image.texture, float(kcol - disp) / widthf, float(krow) / heightf);
-#else
           const scalar_t left_intensity =
               tex2D<float>(left_image.texture, kcol, krow);
           const scalar_t right_intensity =
               tex2D<float>(right_image.texture, kcol - disp, krow);
-#endif
           const scalar_t diff = left_intensity - right_intensity;
 
           cost_value += diff * diff;
@@ -151,7 +148,7 @@ void CostOps::ComputeSSD(const CUDATexture &left_image,
   AT_DISPATCH_FLOATING_TYPES(
       cost_volume.scalar_type(), "ComputeSSD with Texture", ([&] {
         SSDTextureKernel<scalar_t> ssd_kernel(left_image, right_image,
-                                              cost_volume, kernel_size, -1.0);
+                                              cost_volume, kernel_size, std::numeric_limits<scalar_t>::infinity());
         KernelLauncher<kCUDA>::Launch2D(ssd_kernel, left_image.get_width(),
                                         left_image.get_height());
       }));
