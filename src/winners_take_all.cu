@@ -20,13 +20,13 @@ struct WTAKernel<kCPU, scalar_t> {
 
   __host__ void operator()(int row, int col) noexcept {
     const auto disparity_costs = cost_volume[row][col];
-    const auto max_disparaty = cost_volume.size(2);
+    const auto max_disparity = cost_volume.size(2);
     const auto width = cost_volume.size(1);
 
     scalar_t min_cost = disparity_costs[0];
     int won_disparity = 0;
     
-    for (int disp = 1; disp < max_disparaty;
+    for (int disp = 1; disp < max_disparity;
                     //&& (disp + col) < width;
                     ++disp) {
       const auto cost = disparity_costs[disp];
@@ -51,10 +51,10 @@ struct WTAKernel<kCUDA, scalar_t> {
 
   __device__ void operator()(int row, int col, int disp) {
     extern __shared__ __align__(sizeof(float)) uint8_t _shared_memory[];
-	const auto max_disparaty = cost_volume.size(2);
+	const auto max_disparity = cost_volume.size(2);
 
 	scalar_t *disparity_costs = (scalar_t*)_shared_memory;
-	int *indices = (int*)&_shared_memory[max_disparaty*sizeof(scalar_t)];
+	int *indices = (int*)&_shared_memory[max_disparity*sizeof(scalar_t)];
 
     disparity_costs[disp] = cost_volume[row][col][disp];
     indices[disp] = disp;
@@ -62,7 +62,7 @@ struct WTAKernel<kCUDA, scalar_t> {
     __syncthreads();
     const auto width = cost_volume.size(1);
         
-    for (auto s = max_disparaty >> 1; s >= 1; s = s >> 1) {
+    for (auto s = max_disparity >> 1; s >= 1; s = s >> 1) {
       if (disp < s) {
         const auto rhs_idx = s + disp;
         const auto rhs_cost = disparity_costs[rhs_idx];
@@ -82,7 +82,7 @@ struct WTAKernel<kCUDA, scalar_t> {
 
 template <typename scalar_t>
 __global__ void LaunchKernel(WTAKernel<kCUDA, scalar_t> kernel, int width,
-                             int height, int max_disparaty) {
+                             int height, int max_disparity) {
   kernel(blockIdx.y, blockIdx.x, threadIdx.x);
 }
 
@@ -91,7 +91,7 @@ void DisparityReduceOps::RunWinnersTakeAll(const torch::Tensor &cost_volume,
   const auto ref_device = cost_volume.device();
 
   STM_CHECK_DEVICE(ref_device, disparity_image);
-  const auto max_disparaty = cost_volume.size(2);
+  const auto max_disparity = cost_volume.size(2);
   const auto width = cost_volume.size(1);
   const auto height = cost_volume.size(0);
 
@@ -99,10 +99,10 @@ void DisparityReduceOps::RunWinnersTakeAll(const torch::Tensor &cost_volume,
     AT_DISPATCH_FLOATING_TYPES(
         cost_volume.scalar_type(), "RunWinnersTakeAll", [&] {
           WTAKernel<kCUDA, scalar_t> kernel(cost_volume, disparity_image);
-          LaunchKernel<<<dim3(width, height), max_disparaty,
-			sizeof(scalar_t)*max_disparaty + sizeof(int)*max_disparaty
+          LaunchKernel<<<dim3(width, height), max_disparity,
+			sizeof(scalar_t)*max_disparity + sizeof(int)*max_disparity
 					  >>>(
-              kernel, width, height, max_disparaty);
+              kernel, width, height, max_disparity);
         });
   } else {
     AT_DISPATCH_FLOATING_TYPES(
