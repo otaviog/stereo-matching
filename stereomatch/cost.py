@@ -5,6 +5,7 @@ from typing import Optional
 
 import torch
 
+from .cuda_texture import CUDATexture
 from ._cstereomatch import CostOps as _CostOps
 from ._common import empty_tensor
 
@@ -59,7 +60,11 @@ class SSDTexture:
         self.max_disparity = max_disparity
         self.kernel_size = kernel_size
 
-    def __call__(self, left_image, right_image, cost_volume: Optional[torch.Tensor] = None) -> torch.Tensor:
+    def __call__(self, left_image: CUDATexture, right_image: CUDATexture, cost_volume: Optional[torch.Tensor] = None) -> torch.Tensor:
+
+        if left_image.use_normalized_coords or right_image.use_normalized_coords:
+            raise RuntimeError(
+                "Texture coordinates can't be normalized for this implementation")
         cost_volume = empty_tensor(left_image.height, left_image.width,
                                    self.max_disparity,
                                    dtype=torch.float32,

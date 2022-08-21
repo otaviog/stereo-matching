@@ -81,7 +81,9 @@ struct ExpandPathsKernelCUDA {
         path_volume(Accessor<kCUDA, int8_t, 3>::Get(path_volume)),
         row_final_costs(Accessor<kCUDA, scalar_t, 2>::Get(row_final_costs)) {}
   __device__ void operator()(int row, int disp) {
-    __shared__ float shr_previous_col_cost[MAX_DISP + 2];
+    extern __shared__ __align__(sizeof(float)) uint8_t _shr_previous_col_cost[];
+    scalar_t *shr_previous_col_cost = (scalar_t *)_shr_previous_col_cost;
+
     const auto max_disparity = cost_volume.size(2);
 
     if (disp == 0) {
@@ -93,7 +95,7 @@ struct ExpandPathsKernelCUDA {
     }
 
     shr_previous_col_cost[disp + 1] = cost_volume[row][0][disp];
-    __syncthreads();
+    //__syncthreads();
 
     path_volume[disp][row][0] = 0;
 
@@ -120,11 +122,11 @@ struct ExpandPathsKernelCUDA {
 
       path_volume[row][col][disp] = path_direction;
 
-      __syncthreads();
+      //__syncthreads();
       shr_previous_col_cost[disp + 1] = current_cost + min_cost;
     }
 
-    row_final_costs[disp][row] = shr_previous_col_cost[disp + 1];
+    row_final_costs[row][disp] = shr_previous_col_cost[disp + 1];
   }
 };
 
@@ -180,9 +182,9 @@ struct ReducePathsKernel {
 };
 
 void DisparityReduceOps::RunDynamicProgramming(const torch::Tensor &cost_volume,
-                                              torch::Tensor path_volume,
-                                              torch::Tensor row_final_costs,
-                                              torch::Tensor disparity_image) {
+                                               torch::Tensor path_volume,
+                                               torch::Tensor row_final_costs,
+                                               torch::Tensor disparity_image) {
   const auto ref_device = cost_volume.device();
 
   STM_CHECK_DEVICE(ref_device, path_volume);
@@ -198,7 +200,8 @@ void DisparityReduceOps::RunDynamicProgramming(const torch::Tensor &cost_volume,
         cost_volume.scalar_type(), "RunDynamicprogrammingGPU", ([&] {
           ExpandPathsKernelCUDA<scalar_t> path_kernel(cost_volume, path_volume,
                                                       row_final_costs);
-          ExecuteDynamicProgrammingKernel<<<height, max_disparity>>>(
+          ExecuteDynamicProgrammingKernel<<<
+              height, max_disparity, sizeof(scalar_t) * (max_disparity + 2)>>>(
               path_kernel, height, max_disparity);
 
           auto end_disparities = torch::argmin(row_final_costs, {1});
@@ -212,7 +215,7 @@ void DisparityReduceOps::RunDynamicProgramming(const torch::Tensor &cost_volume,
           ExpandPathsKernelCPU<scalar_t> path_kernel(cost_volume, path_volume,
                                                      row_final_costs);
           KernelLauncher<kCPU>::Launch1D(path_kernel, height);
-          
+
           auto end_disparities = torch::argmin(row_final_costs, {1});
           ReducePathsKernel<kCPU, scalar_t> reduce_kernel(
               path_volume, end_disparities, disparity_image);

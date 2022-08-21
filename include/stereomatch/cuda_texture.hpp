@@ -55,6 +55,7 @@ class CUDATexture {
     height_ = 0;
     channels_ = 0;
     scalar_type_ = torch::ScalarType::Float;
+    use_normalized_coords_ = false;
   }
 
   CUDATexture(CUDATexture &&other)
@@ -63,7 +64,8 @@ class CUDATexture {
         width_(other.width_),
         height_(other.height_),
         channels_(other.channels_),
-        scalar_type_(other.scalar_type_) {
+        scalar_type_(other.scalar_type_),
+        use_normalized_coords_(other.use_normalized_coords_) {
     other.texture_object_ = 0;
     other.array_ = nullptr;
   }
@@ -75,11 +77,11 @@ class CUDATexture {
 
   static void RegisterPybind(pybind11::module &m);
 
-  static void RunTestKernel(const CUDATexture &input_texture,
-                            torch::Tensor output_tensor);
+  static void RunTransferTestKernel(const CUDATexture &input_texture,
+                                    torch::Tensor output_tensor);
 
-  static void RunTestKernel2(const torch::Tensor &input_tensor,
-                             torch::Tensor output_tensor);
+  static void RunBindingTestKernel(const torch::Tensor &input_tensor,
+                                   torch::Tensor output_tensor);
 
   void CopyFromTensor(const torch::Tensor &data, bool normalize_coords);
 
@@ -97,6 +99,8 @@ class CUDATexture {
 
   int get_channels() const { return channels_; }
 
+  bool use_normalized_coords() const { return use_normalized_coords_; }
+
   torch::ScalarType get_scalar_type() const { return scalar_type_; }
 
   template <typename scalar_t>
@@ -109,6 +113,7 @@ class CUDATexture {
   cudaTextureObject_t texture_object_;
   cudaArray *array_;
   int width_, height_, channels_;
+  bool use_normalized_coords_;
   torch::ScalarType scalar_type_;
 };
 }  // namespace stereomatch

@@ -14,7 +14,7 @@ def _run_test(cost_volume):
     matcher = stereomatch.disparity_reduce.DynamicProgramming()
     depthmap = matcher(cost_volume)
 
-    save_depthmap(depthmap, "dynprog")
+    save_depthmap(depthmap, pytest.STM_TEST_OUTPUT_PATH / "dynprog")
     return depthmap
 
 
@@ -23,10 +23,19 @@ def test_cpu(ssd_cost):
 
 
 def test_gpu(ssd_cost):
-    cpu_result = _run_test(ssd_cost.volume)
-    gpu_result = _run_test(ssd_cost.volume.to("cuda"))
+    _run_test(ssd_cost.volume.to("cuda"))
 
-    torch.testing.assert_allclose(cpu_result, gpu_result.cpu())
+
+def test_cpu_gpu_should_equal():
+    # Because of the parallel reductions, we need to test them using
+    # a cost volume without equal values.
+    sample_volume = torch.arange(300*300*128).reshape(300, 300, 128).float()
+    matcher = stereomatch.disparity_reduce.WinnerTakesAll()
+
+    lfs = matcher(sample_volume)
+    rhs = matcher(sample_volume.to("cuda:0")).cpu()
+
+    torch.testing.assert_allclose(lfs, rhs)
 
 
 def _benchmark_dynprog(cost_volume, benchmark):
@@ -37,7 +46,7 @@ def _benchmark_dynprog(cost_volume, benchmark):
 @pytest.mark.benchmark(
     group="disparity_reduce"
 )
-def test_benchmark_dynprog_cpu(ssd_cost, benchmark):
+def test_bm_dynprog_cpu(ssd_cost, benchmark):
     """
     Benchmarks the winners takes all (CPU implementation).
     """
@@ -47,7 +56,7 @@ def test_benchmark_dynprog_cpu(ssd_cost, benchmark):
 @pytest.mark.benchmark(
     group="disparity_reduce"
 )
-def test_benchmark_dynprog_gpu(ssd_cost, benchmark):
+def test_bm_dynprog_gpu(ssd_cost, benchmark):
     """
     Benchmarks the winners takes all (GPU implementation).
     """

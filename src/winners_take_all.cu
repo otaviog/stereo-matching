@@ -19,7 +19,6 @@ struct WTAKernel<kCPU, scalar_t> {
         disparity_image(Accessor<kCPU, int, 2>::Get(disparity_image)) {}
 
   __host__ void operator()(int row, int col) noexcept {
-
     const auto disparity_costs = cost_volume[row][col];
     const auto max_disparaty = cost_volume.size(2);
     const auto width = cost_volume.size(1);

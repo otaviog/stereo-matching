@@ -2,6 +2,8 @@
 Visualization utilities for the tests.
 """
 
+from pathlib import Path
+
 import torch
 import matplotlib.pyplot as plt
 
@@ -21,4 +23,7 @@ def save_depthmap(depthmap: torch.Tensor, exp_prefix: str):
     plt.axis("off")
 
     device = "gpu" if depthmap.is_cuda else "cpu"
+    Path(exp_prefix).parent.mkdir(exist_ok=True, parents=True)
+    exp_prefix = str(exp_prefix)
     plt.savefig(f'{exp_prefix}-{device}.png')
+    plt.close()

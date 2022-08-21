@@ -14,7 +14,6 @@ void CUDATexture::Release() {
     return;
   }
 
-  std::cout << "Release" << std::endl;
   CudaSafeCall(cudaDestroyTextureObject(texture_object_));
   CudaSafeCall(cudaFreeArray(array_));
   texture_object_ = 0;
@@ -124,7 +123,7 @@ void CUDATexture::CopyFromTensor(const torch::Tensor &tensor,
       cudaAddressModeClamp;
   tex_description.filterMode = cudaFilterModePoint;
   tex_description.readMode = cudaReadModeElementType;
-  tex_description.normalizedCoords = normalized_coords;
+  use_normalized_coords_ = tex_description.normalizedCoords = normalized_coords;
 
   cudaTextureObject_t texture_object;
   CudaSafeCall(cudaCreateTextureObject(&texture_object, &tex_resource,
@@ -173,17 +172,24 @@ torch::Tensor CUDATexture::ToTensor() const {
 }
 
 void CUDATexture::RegisterPybind(pybind11::module &m) {
-  pybind11::class_<CUDATexture>(m, "CUDATexture")
-      .def(py::init<>())
-      .def("copy_from_tensor", &CUDATexture::CopyFromTensor)
-      .def("to_tensor", &CUDATexture::ToTensor)
-      .def("release", &CUDATexture::Release)
-      .def_readonly("width", &CUDATexture::width_)
-      .def_readonly("height", &CUDATexture::height_)
-      .def_readonly("channels", &CUDATexture::channels_)
-      .def_readonly("dtype", &CUDATexture::scalar_type_)
-      .def_readonly("cuda_texture_object", &CUDATexture::texture_object_)
-      .def_static("_run_test_kernel", &CUDATexture::RunTestKernel)
-      .def_static("_run_test_kernel2", &CUDATexture::RunTestKernel2);
+  auto c =
+      pybind11::class_<CUDATexture>(m, "CUDATexture")
+          .def(py::init<>())
+          .def("copy_from_tensor", &CUDATexture::CopyFromTensor)
+          .def("to_tensor", &CUDATexture::ToTensor)
+          .def("release", &CUDATexture::Release)
+          .def_readonly("width", &CUDATexture::width_)
+          .def_readonly("height", &CUDATexture::height_)
+          .def_readonly("channels", &CUDATexture::channels_)
+          .def_readonly("dtype", &CUDATexture::scalar_type_)
+          .def_readonly("cuda_texture_object", &CUDATexture::texture_object_)
+          .def_readonly("use_normalized_coords",
+                        &CUDATexture::use_normalized_coords_);
+
+#ifndef NDEBUG
+  c.def_static("_run_transfer_test_kernel", &CUDATexture::RunTransferTestKernel)
+      .def_static("_run_binding_test_kernel",
+                  &CUDATexture::RunBindingTestKernel);
+#endif
 }
 }  // namespace stereomatch

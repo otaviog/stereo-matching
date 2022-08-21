@@ -29,16 +29,11 @@ struct SSDKernel {
         empty_value(empty_value) {}
 
   __device__ __host__ void operator()(int row, int col) {
-    const auto max_disparity = cost_volume.size(2);
-    const auto width = cost_volume.size(1);
-    const auto height = cost_volume.size(0);
-    for (auto disp = 0; disp < max_disparity; ++disp) {
-      if (col - disp < 0) {
-        cost_volume[row][col][disp] = NumericLimits<out_scalar_t>::infinity();
-        continue;
-        // return;
-      }
+    const int height = cost_volume.size(0);
+    const int width = cost_volume.size(1);
+    const int max_disparity = cost_volume.size(2);
 
+    for (auto disp = 0; disp < min(col + 1, max_disparity); ++disp) {
       const int row_start = max(row - kernel_size, 0);
       const int row_end = min(row + kernel_size, int(height));
 
@@ -51,14 +46,17 @@ struct SSDKernel {
       for (int krow = row_start; krow < row_end; ++krow) {
         for (int kcol = col_start; kcol < col_end; ++kcol) {
           const in_scalar_t left_intensity = left_image[krow][kcol];
-          const in_scalar_t right_intensity =
-              right_image[krow][kcol - disp];  // TODO: review
+          const in_scalar_t right_intensity = right_image[krow][kcol - disp];
           const out_scalar_t diff = left_intensity - right_intensity;
 
           cost_value += diff * diff;
         }
       }
       cost_volume[row][col][disp] = cost_value;
+    }
+
+    for (auto disp = col + 1; disp < max_disparity; ++disp) {
+      cost_volume[row][col][disp] = NumericLimits<out_scalar_t>::infinity();
     }
   }
 };
@@ -99,18 +97,17 @@ struct SSDTextureKernel {
         empty_value(empty_value) {}
 
   __device__ void operator()(int row, int col) {
-
     const int height = cost_volume.size(0);
     const int width = cost_volume.size(1);
 
-	const float heightf = float(height);
+    const float heightf = float(height);
     const float widthf = float(width);
-	
+
     const auto max_disparity = cost_volume.size(2);
 
     for (auto disp = 0; disp < max_disparity; ++disp) {
       if (col - disp < 0) {
-		cost_volume[row][col][disp] = NumericLimits<scalar_t>::infinity();
+        cost_volume[row][col][disp] = NumericLimits<scalar_t>::infinity();
         continue;
       }
 
@@ -147,8 +144,9 @@ void CostOps::ComputeSSD(const CUDATexture &left_image,
 
   AT_DISPATCH_FLOATING_TYPES(
       cost_volume.scalar_type(), "ComputeSSD with Texture", ([&] {
-        SSDTextureKernel<scalar_t> ssd_kernel(left_image, right_image,
-                                              cost_volume, kernel_size, std::numeric_limits<scalar_t>::infinity());
+        SSDTextureKernel<scalar_t> ssd_kernel(
+            left_image, right_image, cost_volume, kernel_size,
+            std::numeric_limits<scalar_t>::infinity());
         KernelLauncher<kCUDA>::Launch2D(ssd_kernel, left_image.get_width(),
                                         left_image.get_height());
       }));

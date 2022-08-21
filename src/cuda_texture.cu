@@ -26,7 +26,7 @@ struct CopyTextureTestKernel {
   }
 };
 
-void CUDATexture::RunTestKernel(const CUDATexture& input_texture,
+void CUDATexture::RunTransferTestKernel(const CUDATexture& input_texture,
                                 torch::Tensor output_tensor) {
   if (!output_tensor.device().is_cuda()) {
     throw std::runtime_error("Cost volume must be a CUDA tensor.");
@@ -66,8 +66,8 @@ __global__ void copyKernel(cudaTextureObject_t input,
   output[y][x] = tex2D<float>(input, u, v);
 }
 
-void CUDATexture::RunTestKernel2(const torch::Tensor& input_tensor,
-                                 torch::Tensor output_tensor) {
+void CUDATexture::RunBindingTestKernel(const torch::Tensor& input_tensor,
+									   torch::Tensor output_tensor) {
   const int width = input_tensor.size(1);
   const int height = input_tensor.size(0);
   cudaChannelFormatDesc channelDesc =

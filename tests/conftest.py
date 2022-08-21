@@ -60,4 +60,5 @@ def ssd_cost():
 
 
 def pytest_configure():
+    pytest.STM_TEST_OUTPUT_PATH = Path(__file__).parent / "test-result"
     pytest.STM_MAX_DISPARITY = 32

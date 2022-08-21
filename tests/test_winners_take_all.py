@@ -29,6 +29,8 @@ def test_gpu():
     Tests winners take all (GPU implementation).
     """
 
+    # Because of the parallel reductions, we need to test them using
+    # a cost volume without equal values.
     sample_volume = torch.arange(300*300*128).reshape(300, 300, 128).float()
     matcher = stereomatch.disparity_reduce.WinnerTakesAll()
 
