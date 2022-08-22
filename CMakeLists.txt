@@ -14,13 +14,13 @@ execute_process(
   COMMAND ${PYTHON_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/cmake/get_torch_dir.py
   OUTPUT_VARIABLE FOUND_TORCH_DIR)
 
-message(FOUND_TORCH_DIR)
 string(STRIP ${FOUND_TORCH_DIR} FOUND_TORCH_DIR)
 set(Torch_DIR ${FOUND_TORCH_DIR})
 
 find_package(Torch REQUIRED)
 find_library(TORCH_PYTHON_LIBRARY torch_python PATHS "${TORCH_INSTALL_PREFIX}/lib")
 
+find_package(CUDA REQUIRED)
 find_package(PythonLibs 3 REQUIRED)
 if (SKBUILD)
   find_package(PythonExtensions REQUIRED)
@@ -36,6 +36,8 @@ add_definitions(-D_GLIBCXX_USE_CXX11_ABI=${TORCH_CXX11_ABI})
 set(CMAKE_CXX_FLAGS -fPIC)
 
 include_directories(${CMAKE_SOURCE_DIR}/include)
+
+find_program(iwyu_path NAMES include-what-you-use iwyu)
 
 add_definitions(-D_GLIBCXX_USE_CXX11_ABI=0)
 add_subdirectory(src)

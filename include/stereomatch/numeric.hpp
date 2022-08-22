@@ -5,6 +5,7 @@
 #include <limits>
 
 #include "accessor.hpp"
+#include "cuda_utils.hpp"
 
 namespace stereomatch {
 
@@ -49,17 +50,17 @@ struct NumericLimits {
 #endif
 
 template <typename T>
-constexpr T get_min(T v1, T v2, T v3, T v4) {
+constexpr STM_DEVICE_HOST T get_min(T v1, T v2, T v3, T v4) {
   return fmin(v1, fmin(v2, fmin(v3, v4)));
 }
 
 template <typename T>
-constexpr T get_min(T v1, T v2, T v3) {
+constexpr STM_DEVICE_HOST T get_min(T v1, T v2, T v3) {
   return fmin(v1, fmin(v2, v3));
 }
 
 template <typename T>
-constexpr T get_max(T v1, T v2, T v3) {
+constexpr STM_DEVICE_HOST T get_max(T v1, T v2, T v3) {
   return fmax(v1, fmax(v2, v3));
 }
 

@@ -1,0 +1,19 @@
+name: build-and-test
+on: [push]
+
+jobs:
+  build_docker:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v3
+      - name: Build and push docker
+        run: docker build -t otaviog/stereo-matching-base:latest --target base .
+  build:
+    runs-on: ubuntu-latest
+    container: otaviog/stereo-matching-base:latest
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v3
+      - name: Build cpp code
+        run: pip install .

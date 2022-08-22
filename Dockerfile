@@ -2,8 +2,7 @@ FROM nvidia/cudagl:11.2.2-devel-ubuntu20.04 AS base
 LABEL maintaner=otavio.b.gomes@gmail.com
 
 ## TODO: delete this
-RUN apt update && DEBIAN_FRONTEND=noninteractive apt -yq install aria2 unzip libopenni2-dev\
-    libusb-1.0-0-dev git
+RUN apt update && DEBIAN_FRONTEND=noninteractive apt -yq install aria2
 
 WORKDIR /
 RUN aria2c https://repo.anaconda.com/miniconda/Miniconda3-py38_4.10.3-Linux-x86_64.sh
