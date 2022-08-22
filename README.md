@@ -1,21 +1,29 @@
 # Stereo Matching Experiment
 
-I found PyTorch an excellent tool to protoype CUDA-based kernels for fast implementation of computer vision algorithms.
-In this repository I revamp my old stereo matching research with CUDA and rewriten them using modern CUDA along with Pytorch.
+I found PyTorch an excellent tool to prototype CUDA-based kernels for experimenting with computer vision algorithms.
+I revamp my old stereo matching code with CUDA in this repository and rewrite them using modern CUDA and Pytorch.
+
+Here's a video from the old implementation:
+
+[![Stereo matching](http://img.youtube.com/vi/EuIyLVVpwGs/0.jpg)](http://www.youtube.com/watch?v=EuIyLVVpwGs "Stereo matching sample old")
+
 
 **Methods**
 
 * Cost measurements:
-  * Sum of squared distances
+  * Sum of squared distances (SSD)
   * Birchfield
 * Aggregation mechanisms:
+  * Semiglobal matching
+* Disparity reducer
   * Winner takes all
   * Dynamic Programming
-  * Semiglobal matching
 
-**Note for AI practioners**: The operations aren't differentiable.
+**Note for AI practitioners**: The operations aren't differentiable.
 
 ## Getting Started
+
+TBD
 
 **Requirements**:
 
@@ -28,4 +36,11 @@ $ pip install .
 
 
 ## Benchmarking
+
+TBD: Benchmarks
+
+## Optimization Log
+
+TBD: Add a log of optimization attempts to test what works and what not work.
+
 
