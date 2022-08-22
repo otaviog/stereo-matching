@@ -18,32 +18,7 @@
 #include "check.hpp"
 #include "numeric.hpp"
 
-#define SG_MAX_DISP 256
-
 namespace stereomatch {
-template <typename data_t>
-class CUDAArray {
- public:
-  static CUDAArray FromCPU(const data_t* memory, size_t size);
-
-  void size() {}
-
- private:
-  data_t* array_;
-};
-                     
-template <typename scalar_t>
-inline __device__ scalar_t GetCost(scalar_t cost, scalar_t keep_disp_cost,
-                                   scalar_t change_1_disp_cost1,
-                                   scalar_t change_1_disp_cost2,
-                                   scalar_t min_cost_all_disps,
-                                   scalar_t penalty1, scalar_t penalty2) {
-  return cost + get_min(
-      keep_disp_cost,
-      change_1_disp_cost1 + penalty1,
-      change_1_disp_cost2 + penalty2,
-      min_cost_all_disps + penalty2) - min_cost_all_disps;
-}
 
 template <typename scalar_t>
 struct SemiglobalKernel {
@@ -60,86 +35,71 @@ struct SemiglobalKernel {
       : cost_volume(Accessor<kCUDA, scalar_t, 3>::Get(cost_volume)),
         left_image(Accessor<kCUDA, scalar_t, 2>::Get(left_image)),
         path_descriptors(thrust::raw_pointer_cast(path_descriptors)),
-        penalty1(penalty1),
-        penalty2(penalty2),
+        penalty1{penalty1},
+        penalty2{penalty2},
         output_cost_volume(
             Accessor<kCUDA, scalar_t, 3>::Get(output_cost_volume)) {}
 
   __device__ void operator()(int disp, int path) {
-    __shared__ scalar_t min_cost;
-    __shared__ int2 current_pixel;
-
-    __shared__ scalar_t adapted_penalty2;
-    __shared__ scalar_t last_intensity;
-
-    // extern __shared__ scalar_t prev_cost_memory[];
-
     const auto max_disparity = cost_volume.size(2);
 
-    // scalar_t *prev_cost = prev_cost_memory;
-    // scalar_t *prev_cost_min_search = &prev_cost_memory[max_disparity + 2];
-
-    __shared__ scalar_t prev_cost[SG_MAX_DISP + 2];
-    __shared__ scalar_t prev_cost_min_search[SG_MAX_DISP];
+    extern __shared__ __align__(sizeof(float)) uint8_t _shared_mem[];
+    scalar_t* shr_prev_cost = (scalar_t*)_shared_mem;
+    scalar_t* shr_prev_cost_min_search = &shr_prev_cost[max_disparity + 2];
 
     const auto path_desc(path_descriptors[path]);
+    auto current_pixel = cast_point2<int2>(path_desc.start);
 
-    __shared__ int2 current_path;
-    if (disp == 0) {
-      current_pixel = cast_point2<int2>(path_desc.start);
-      // prev_min_cost[0] = NumericLimits<scalar_t>::infinity();
-      last_intensity = left_image[current_pixel.y][current_pixel.x];
-      prev_cost[0] = prev_cost[max_disparity] =
-                     NumericLimits<scalar_t>::infinity();
-    }
-
-    __syncthreads();
-
-    const auto initial_cost = cost_volume[current_pixel.y][current_pixel.x][disp];
-
-    prev_cost[disp + 1] = initial_cost;
-    prev_cost_min_search[disp] = initial_cost;
+    const auto initial_cost =
+        cost_volume[current_pixel.y][current_pixel.x][disp];
+    shr_prev_cost[disp + 1] = initial_cost;
+    shr_prev_cost_min_search[disp] = initial_cost;
     output_cost_volume[current_pixel.y][current_pixel.x][disp] += initial_cost;
 
-    __syncthreads();
+    if (disp == 0) {
+      // Pading borders
+      shr_prev_cost[0] = shr_prev_cost[max_disparity + 1] =
+          NumericLimits<scalar_t>::infinity();
+    }
 
-    for (auto i = 1; i < path_desc.size; i++) {
-      int search_idx = max_disparity >> 1;
-      while (search_idx != 0) {
-        if (disp < search_idx) {
-          prev_cost_min_search[disp] =
-              fminf(prev_cost_min_search[disp], prev_cost_min_search[disp + search_idx]);
+    scalar_t prev_intensity = left_image[current_pixel.y][current_pixel.x];
+    for (auto i = 1; i < path_desc.size; ++i) {
+      __syncthreads();  // Wait writes into of sgm_cost into the search array
+      for (auto s = max_disparity >> 1; s >= 1; s = s >> 1) {
+        if (disp < s) {
+          const auto rhs_idx = s + disp;
+          const auto rhs_cost = shr_prev_cost_min_search[rhs_idx];
+          if (shr_prev_cost_min_search[disp] >= rhs_cost) {
+            shr_prev_cost_min_search[disp] = rhs_cost;
+          }
         }
         __syncthreads();
-        search_idx = search_idx >> 1;
       }
 
-      if (disp == 0) {
-        min_cost = prev_cost_min_search[0];
-        current_pixel.x += path_desc.direction.x;
-        current_pixel.y += path_desc.direction.y;
+      const auto prev_min_cost = shr_prev_cost_min_search[0];
+      current_pixel.x += path_desc.direction.x;
+      current_pixel.y += path_desc.direction.y;
 
-        const auto intensity = left_image[current_pixel.y][current_pixel.x];
+      const auto intensity = left_image[current_pixel.y][current_pixel.x];
+      const auto p2_adjusted =
+          max(penalty1, penalty2 / abs(intensity - prev_intensity));
 
-        adapted_penalty2 = penalty2 / abs(intensity - last_intensity);
-        last_intensity = intensity;
-      }
+      prev_intensity = intensity;
 
-      __syncthreads();
+      const auto match_cost =
+          cost_volume[current_pixel.y][current_pixel.x][disp];
+      const auto sgm_cost =
+          match_cost +
+          get_min(shr_prev_cost[disp + 1], shr_prev_cost[disp] + penalty1,
+                  shr_prev_cost[disp + 2] + penalty1,
+                  prev_min_cost + p2_adjusted) -
+          prev_min_cost;
 
-      
-      const auto current_cost =
-          GetCost(cost_volume[current_pixel.y][current_pixel.x][disp],
-                  prev_cost[disp + 1], prev_cost[disp],
-                  prev_cost[disp + 2], min_cost, penalty1, adapted_penalty2);
+      output_cost_volume[current_pixel.y][current_pixel.x][disp] += sgm_cost;
 
-      __syncthreads();
-
-      prev_cost[disp + 1] = current_cost;
-      prev_cost_min_search[disp] = current_cost;
-
-      output_cost_volume[current_pixel.y][current_pixel.x][disp] += current_cost;
-      __syncthreads();
+      __syncthreads();  // Wait for all threads to read their neighbor costs
+      shr_prev_cost[disp + 1] = sgm_cost;
+      shr_prev_cost_min_search[disp] = sgm_cost;
     }
   }
 };
@@ -148,7 +108,7 @@ template <typename T>
 static __global__ void LaunchKernel(SemiglobalKernel<T> kernel,
                                     int path_descriptor_count,
                                     int max_disparity) {
-  const int path_descriptor_idx = blockIdx.x; 
+  const int path_descriptor_idx = blockIdx.x;
   const int disparity = threadIdx.x;
 
   if (path_descriptor_idx < path_descriptor_count &&
@@ -170,11 +130,9 @@ void RunSemiglobalAggregationGPU(const torch::Tensor& cost_volume,
             cost_volume, left_image,
             thrust::raw_pointer_cast(path_descriptors.data()), penalty1,
             penalty2, output_cost_volume);
-        LaunchKernel<<<path_descriptors.size(), max_disparity
-                       //,(max_disparity*2 + 2)*sizeof(scalar_t)
-                       >>>(kernel, path_descriptors.size(), max_disparity);
+        LaunchKernel<<<path_descriptors.size(), max_disparity,
+                       (2 * max_disparity + 3) * sizeof(scalar_t)>>>(
+            kernel, path_descriptors.size(), max_disparity);
       });
 }
 }  // namespace stereomatch
-
-

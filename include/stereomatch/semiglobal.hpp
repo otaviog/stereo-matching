@@ -35,15 +35,15 @@ struct SGPixelPath {
   Point2<int16_t> direction;
   uint16_t size;
 
-  SGPixelPath(Point2<int16_t> start, Point2<int16_t> end,
-              Point2<int16_t> direction, int16_t size)
+  STM_DEVICE_HOST SGPixelPath(Point2<int16_t> start, Point2<int16_t> end,
+              Point2<int16_t> direction, int16_t size) noexcept
       : start(start), end(end), direction(direction), size(size) {}
 
-  SGPixelPath inverse() const {
+  STM_DEVICE_HOST SGPixelPath inverse() const {
     return SGPixelPath(end, start, Point2<int16_t>(-direction.x, -direction.y),
                        size);
   }
-  static std::vector<SGPixelPath> GeneratePaths(size_t width, size_t height);
+  static std::vector<SGPixelPath> GeneratePaths(size_t width, size_t height) noexcept;
 };
 
 }  // namespace stereomatch
