@@ -23,7 +23,7 @@ jobs:
     needs: build_docker
     runs-on: [self-hosted]
     container: otaviog/stereo-matching:base
-      options: --gpus all
+      # options: "--gpus all"
     steps:
       - name: Check out the repository
         uses: actions/checkout@v3
