@@ -8,6 +8,7 @@ jobs:
       - name: Check out the repository
         uses: actions/checkout@v3
       - name: Build and push docker
+        timeout-minutes: 100
         run: |
           docker build -t otaviog/stereo-matching:base --target base .
       - name: Login docker hub
