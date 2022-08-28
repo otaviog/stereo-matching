@@ -26,8 +26,6 @@ if (SKBUILD)
   find_package(PythonExtensions REQUIRED)
 endif(SKBUILD)
 
-find_package(Eigen3 REQUIRED)
-
 execute_process(
 	COMMAND ${PYTHON_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/cmake/get_torch_cxx11_abi.py
 	OUTPUT_VARIABLE TORCH_CXX11_ABI)
@@ -39,5 +37,5 @@ include_directories(${CMAKE_SOURCE_DIR}/include)
 
 find_program(iwyu_path NAMES include-what-you-use iwyu)
 
-add_definitions(-D_GLIBCXX_USE_CXX11_ABI=0)
+# add_definitions(-D_GLIBCXX_USE_CXX11_ABI=0)
 add_subdirectory(src)

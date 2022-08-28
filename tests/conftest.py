@@ -1,3 +1,6 @@
+"""
+Common testing.
+"""
 from pathlib import Path
 import dataclasses
 
@@ -9,17 +12,11 @@ import torch
 import stereomatch
 
 
-@dataclasses.dataclass
-class CostFixture:
-    volume: torch.Tensor
-    left_image: torch.Tensor
-
-    def to(self, device):
-        return CostFixture(self.volume.to(device), self.left_image.to(device))
-
-
 @pytest.fixture
 def sample_stereo_pair():
+    """
+    Fixture with sample stereo pair to use during testing.
+    """
     image_base_dir = (Path(__file__).parent.parent /
                       "test-data/middleburry/teddy/")
 
@@ -34,8 +31,29 @@ def sample_stereo_pair():
     return left_image, right_image
 
 
+@dataclasses.dataclass
+class CostFixture:
+    """
+    Input for aggregation and disparity reduce methods.
+
+    Attributes:
+        volume: A cost volume with shape [HxWxD], where D is the maximum disparity.
+        left_image: The left image that some methods like SGM uses to adapt its calculations.
+    """
+    volume: torch.Tensor
+    left_image: torch.Tensor
+
+    def to(self, device):
+        """
+        Returns a new instance with its tensor attributes to the given device.
+        """
+        return CostFixture(self.volume.to(device), self.left_image.to(device))
+
 @pytest.fixture
 def ssd_cost():
+    """
+    Fixture for aggregation and disparity reduce methods to have a common SSD cost volume to test.
+    """
     cache_file = (Path(__file__).parent /
                   "test_cache/cost_volume_teddy.torch")
 
@@ -60,5 +78,8 @@ def ssd_cost():
 
 
 def pytest_configure():
+    """
+    Configures global variables used during testing.
+    """
     pytest.STM_TEST_OUTPUT_PATH = Path(__file__).parent / "test-result"
     pytest.STM_MAX_DISPARITY = 32

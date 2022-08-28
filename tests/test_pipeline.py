@@ -9,10 +9,13 @@ from stereomatch.aggregation import Semiglobal
 from stereomatch.disparity_reduce import WinnerTakesAll, DynamicProgramming
 from stereomatch.pipeline import Pipeline
 
-from viz import save_depthmap
+from .viz import save_depthmap
 
 
 def test_pipeline(sample_stereo_pair):
+    """
+    Tests all combinations of pipelines. The results will be placed on a folder named pipeline-out.
+    """
     left, right = sample_stereo_pair
 
     output_dir = Path("pipeline-out")
@@ -34,5 +37,5 @@ def test_pipeline(sample_stereo_pair):
                     disp_image, output_dir / f"{cost_name}-sga-{disp_name}")
 
 
-def test_should_interchange_device():
-    pass
+# def test_should_interchange_device():
+#    pass

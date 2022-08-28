@@ -7,10 +7,10 @@ import torch
 
 import stereomatch
 
-from viz import save_depthmap
+from .viz import save_depthmap
 
 
-def _test_impl(ssd_cost, suffix):
+def _test_impl(ssd_cost):
     sgm = stereomatch.aggregation.Semiglobal()
 
     sgm_cost = sgm(
@@ -25,7 +25,7 @@ def test_cpu(ssd_cost):
     Integration test of the semiglobal CPU method. Outputs a depthmap into the
     test results folder.
     """
-    _test_impl(ssd_cost, "cpu")
+    _test_impl(ssd_cost)
 
 
 def test_gpu(ssd_cost):
@@ -33,7 +33,7 @@ def test_gpu(ssd_cost):
     Integration test of the semiglobal GPU method. Outputs a depthmap into the
     test results folder.
     """
-    _test_impl(ssd_cost.to("cuda:0"), "cuda")
+    _test_impl(ssd_cost.to("cuda:0"))
 
 
 def test_cpu_gpu_should_equal():

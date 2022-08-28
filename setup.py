@@ -2,18 +2,7 @@
 """
 
 import sys
-
-
 from setuptools import find_packages
-
-try:
-    from skbuild import setup
-except ImportError:
-    print('scikit-build is required to build from source.', file=sys.stderr)
-    print('Please run:', file=sys.stderr)
-    print('', file=sys.stderr)
-    print('  python -m pip install scikit-build')
-    sys.exit(1)
 
 REQUIREMENTS = [
     'numpy',
@@ -22,8 +11,7 @@ REQUIREMENTS = [
     'torch'
 ]
 
-
-setup(
+SETUP_KWARGS = dict(
     name='stereomatch',
     version='1.0.0',
     author='Otavio Gomes',
@@ -37,5 +25,47 @@ setup(
         'Programming Language :: Python :: 3.5'
     ],
     packages=find_packages(exclude=['*._test']),
-    install_requires=REQUIREMENTS
+    install_requires=REQUIREMENTS,
+    entry_points={
+        'console_scripts': ['stm-run-pair=stereomatch.single_image_app:main']
+    }
 )
+
+
+try:
+    from skbuild import setup
+
+    setup(**SETUP_KWARGS)
+except ImportError:
+    print('Note: scikit-build is required for developers source builds.',
+          file=sys.stderr)
+    print('Please run:', file=sys.stderr)
+    print('', file=sys.stderr)
+    print('  python -m pip install scikit-build')
+    print('Using production build')
+
+    # pylint: disable=ungrouped-imports
+    from setuptools import setup
+    from torch.utils.cpp_extension import (
+        BuildExtension, CUDAExtension, include_paths)
+
+    setup(
+        ext_modules=[
+            CUDAExtension('_cstereomatch', [
+                'src/cuda_utils.cpp',
+                'src/cuda_texture.cpp',
+                'src/cuda_texture.cu',
+                'src/cost.cpp',
+                'src/ssd.cu',
+                'src/birchfield_cost.cu',
+                'src/winners_take_all.cu',
+                'src/dynamic_programming.cu',
+                'src/disparity_reduce.cpp',
+                'src/semiglobal.cu',
+                'src/semiglobal.cpp',
+                'src/aggregation.cpp',
+            ], include_dirs=include_paths(cuda=True) + ["include", "include/stereomatch"])
+        ],
+        cmdclass={
+            'build_ext': BuildExtension
+        }, **SETUP_KWARGS)

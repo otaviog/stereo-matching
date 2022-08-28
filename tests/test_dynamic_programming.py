@@ -7,7 +7,7 @@ import torch
 
 import stereomatch
 
-from viz import save_depthmap
+from .viz import save_depthmap
 
 
 def _run_test(cost_volume):
@@ -19,14 +19,24 @@ def _run_test(cost_volume):
 
 
 def test_cpu(ssd_cost):
+    """
+    Runs the dynamic programing CPU implementations. It will output the disparity image.
+    """
     _run_test(ssd_cost.volume)
 
 
 def test_gpu(ssd_cost):
+    """
+    Runs the dynamic programing GPU implementations. It will output the disparity image.
+    """
     _run_test(ssd_cost.volume.to("cuda"))
 
 
 def test_cpu_gpu_should_equal():
+    """
+    Asserts that the dynamic programming have equivalent implementations
+    on GPU and CPU.
+    """
     # Because of the parallel reductions, we need to test them using
     # a cost volume without equal values.
     sample_volume = torch.arange(300*300*128).reshape(300, 300, 128).float()

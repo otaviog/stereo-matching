@@ -9,7 +9,7 @@ from stereomatch.cuda_texture import CUDATexture
 from stereomatch.cost import SSDTexture, SSD, Birchfield
 from stereomatch.disparity_reduce import WinnerTakesAll
 
-from viz import save_depthmap
+from .viz import save_depthmap
 
 
 # pylint: disable=redefined-outer-name
@@ -58,6 +58,9 @@ def test_ssd_should_cpu_gpu_equal(sample_stereo_pair):
 
 
 def test_ssd_texture_result(sample_stereo_pair):
+    """
+    Tests the SSD with WTA.
+    """
     left, right = sample_stereo_pair
 
     tex1 = CUDATexture.from_tensor(left)
@@ -102,6 +105,9 @@ def test_bm_ssd_gpu(sample_stereo_pair, benchmark):
     group="cost"
 )
 def test_bm_ssd_texture(sample_stereo_pair, benchmark):
+    """
+    Benchmark the SSD using textures excluding the CPU to GPU upload.
+    """
     left, right = sample_stereo_pair
     left = CUDATexture.from_tensor(left, normalized_coords=False)
     right = CUDATexture.from_tensor(right, normalized_coords=False)
@@ -113,6 +119,9 @@ def test_bm_ssd_texture(sample_stereo_pair, benchmark):
     group="cost"
 )
 def test_bm_upload_ssd_texture(sample_stereo_pair, benchmark):
+    """
+    Benchmark the SSD using textures including the CPU to GPU upload.
+    """
     left, right = sample_stereo_pair
     ssd_texture = SSDTexture(pytest.STM_MAX_DISPARITY)
 
@@ -124,6 +133,9 @@ def test_bm_upload_ssd_texture(sample_stereo_pair, benchmark):
 
 
 def test_birchfield(sample_stereo_pair):
+    """
+    Saves sample and verifies the consistency of the Birchfield implementations.
+    """
     left, right = sample_stereo_pair
 
     birchfield = Birchfield(pytest.STM_MAX_DISPARITY)
@@ -144,6 +156,9 @@ def test_birchfield(sample_stereo_pair):
     group="cost"
 )
 def test_bm_birchfield_gpu(sample_stereo_pair, benchmark):
+    """
+    GPU benchmark.
+    """
     left, right = sample_stereo_pair[0].cuda(), sample_stereo_pair[1].cuda()
     birchfield = Birchfield(pytest.STM_MAX_DISPARITY)
     benchmark(birchfield, left, right)
@@ -153,6 +168,9 @@ def test_bm_birchfield_gpu(sample_stereo_pair, benchmark):
     group="cost"
 )
 def test_bm_birchfield_cpu(sample_stereo_pair, benchmark):
+    """
+    CPU benchmark.
+    """
     left, right = sample_stereo_pair[0], sample_stereo_pair[1]
     birchfield = Birchfield(pytest.STM_MAX_DISPARITY)
     benchmark(birchfield, left, right)

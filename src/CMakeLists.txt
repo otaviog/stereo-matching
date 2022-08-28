@@ -24,7 +24,6 @@ cuda_add_library(stereomatch
 target_include_directories(stereomatch
   PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../include/stereomatch>
-  $<BUILD_INTERFACE:${EIGEN3_INCLUDE_DIR}>
   )
 target_link_libraries(stereomatch "${TORCH_LIBRARIES}" "${TORCH_PYTHON_LIBRARY}" )
 set_property(TARGET stereomatch PROPERTY CXX_STANDARD 17)

@@ -12,7 +12,7 @@ from .cuda_texture import CUDATexture
 
 
 TensorOrTexture = Union[torch.Tensor, CUDATexture]
-CostFunction = Callable[[TensorOrTexture, TensorOrTexture, int, torch.Tensor],
+CostFunction = Callable[[TensorOrTexture, TensorOrTexture, torch.Tensor],
                         torch.Tensor]
 AggregationFunction = Callable[[torch.Tensor, torch.Tensor, torch.Tensor],
                                torch.Tensor]
@@ -34,9 +34,24 @@ class _TexCostFunctionWrapper:
 
 
 class Pipeline:
+    """
+    Class for composing stereo matching pipelines.
+    """
+
     def __init__(self, cost: CostFunction,
                  disparity_reduce: DisparityReduceFunction,
                  aggregation: Optional[AggregationFunction] = None):
+        """
+        Setups the pipeline.
+
+        Args:
+            cost: The cost function, it should accept the left and right images,
+             and a output cost volume. It should return a [HxWxD] cost volume tensor.
+            disparity_reduce: The disparity reduce method. It should accept a cost volume,
+             a output disparity image, and should return a [HxW] disparity image.
+            aggregation: The aggregation function. It accepts the cost volume, the left image,
+             and the output aggregation volume.
+        """
         if isinstance(cost, SSDTexture):
             self.cost = _TexCostFunctionWrapper(cost)
         else:
@@ -51,12 +66,22 @@ class Pipeline:
         self._aggregation_volume = None
         self._disparity_image = None
 
-    def estimate(self, left_image, right_image):
+    def estimate(self, left_image: torch.Tensor, right_image: torch.Tensor) -> torch.Tensor:
+        """
+        Executes the pipeline.
+
+        Args:
+            left_image: The left image. It shape and type must be compatible with the cost method.
+            right_image: The right image. It shape and type must be compatible with the cost method.
+
+        Returns:
+            The disparity map.
+        """
         self._cost_volume = self.cost(left_image, right_image,
                                       cost_volume=self._cost_volume)
 
         if self.aggregation is not None:
-             # TODO: fix the Double upload of left_image to GPU
+            # TODO: fix the Double upload of left_image to GPU
             self._aggregation_volume = self.aggregation(
                 self._cost_volume, left_image.to(self._cost_volume.device),
                 self._aggregation_volume)

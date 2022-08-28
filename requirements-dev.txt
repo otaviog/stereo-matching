@@ -2,3 +2,5 @@ autopep8
 pylint
 ipdb
 pytest
+pytest-conv
+pytest-benchmark

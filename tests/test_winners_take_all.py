@@ -7,8 +7,7 @@ import torch
 
 import stereomatch
 
-from viz import save_depthmap
-
+from .viz import save_depthmap
 
 def _test(ssd_cost):
     matcher = stereomatch.disparity_reduce.WinnerTakesAll()

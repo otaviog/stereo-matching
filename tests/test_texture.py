@@ -1,3 +1,6 @@
+"""
+Tests the CUDATexture class.
+"""
 import pytest
 import torch
 
@@ -36,7 +39,7 @@ def test_non_device_creation():
 
 def test_transfers():
     """
-    Tests if the from_tensor and to_tensor returns the same tensor, 
+    Tests if the from_tensor and to_tensor returns the same tensor,
     3-channel case.
     """
     tensor0 = torch.rand(128, 128, 4, dtype=torch.float32)
@@ -57,8 +60,12 @@ def test_single_channel():
 
 
 def test_access():
-    #tensor = (torch.rand(128, 128, device="cuda:0") * 255.0).float()
-    #tensor = (torch.rand(512, 128) * 255.0).float().contiguous()
+    """
+    Test the texture-tensor transfer.
+    """
+    # pylint: disable=protected-access
+    # tensor = (torch.rand(128, 128, device="cuda:0") * 255.0).float()
+    # tensor = (torch.rand(512, 128) * 255.0).float().contiguous()
     tensor = (torch.rand(128, 128) * 255.0).byte().contiguous()
     texture = CUDATexture.from_tensor(tensor)
     output_tensor = torch.zeros_like(tensor).cuda()
@@ -73,6 +80,10 @@ def test_access():
     torch.testing.assert_allclose(output_tensor.cpu(), tensor)
 
 def test_kernel2():
+    """
+    Used for exploring internal CUDA texture parameters.
+    """
+    # pylint: disable=protected-access
     tensor = (torch.rand(128, 128, device="cuda:0") * 255.0).float()
     output_tensor = torch.zeros_like(tensor)
 
@@ -82,6 +93,10 @@ def test_kernel2():
 
 
 def test_completeness():
+    """
+    Test texture-to-tensor and tensor-to-texture transfer for multiple data types.
+    """
+    # pylint: disable=protected-access
     for dtype in [torch.uint8, torch.float32]:
         for device in ["cpu", "cuda:0"]:
             tensor = torch.rand(513, 123, 1) * 255.0

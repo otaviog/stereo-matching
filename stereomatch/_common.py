@@ -1,3 +1,6 @@
+"""
+Common utils used internally in the project.
+"""
 from typing import Optional
 
 import torch
@@ -12,6 +15,18 @@ def _are_tensors_incompatible(reuse_tensor, sizes, dtype, device):
 def empty_tensor(*sizes, dtype: torch.dtype = torch.float32,
                  reuse_tensor: Optional[torch.Tensor] = None,
                  device: torch.device = torch.device("cpu")) -> torch.Tensor:
+    """
+    Returns a `torch.empty` tensor trying to reuse the `reuse_tensor` if possible.
+
+    Args:
+        sizes: The tensor shape.
+        dtype: The tensor type.
+        reuse_tensor: If possible, it will fill with zeros this tensor and return it.
+        device: The tensor device.
+
+    Returns:
+        An empty tensor. If both tensors are compatible, then it will return the `reuse_tensor`.
+    """
     if _are_tensors_incompatible(reuse_tensor, sizes, dtype, device):
         return torch.empty(sizes, dtype=dtype, device=device)
     return reuse_tensor
@@ -26,7 +41,7 @@ def zeros_tensor_like(base_tensor, reuse_tensor: Optional[torch.Tensor] = None) 
         reuse_tensor: If possible, it will fill with zeros this tensor and return it.
 
     Returns:
-        A zeros tensor. If both tensors are compatible, then it will return `reuse_tensor`. 
+        A zeros tensor. If both tensors are compatible, then it will return the `reuse_tensor`.
     """
     if _are_tensors_incompatible(reuse_tensor, base_tensor.size(),
                                  base_tensor.dtype, base_tensor.device):

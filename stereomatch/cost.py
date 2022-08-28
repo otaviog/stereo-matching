@@ -60,7 +60,8 @@ class SSDTexture:
         self.max_disparity = max_disparity
         self.kernel_size = kernel_size
 
-    def __call__(self, left_image: CUDATexture, right_image: CUDATexture, cost_volume: Optional[torch.Tensor] = None) -> torch.Tensor:
+    def __call__(self, left_image: CUDATexture, right_image: CUDATexture,
+                 cost_volume: Optional[torch.Tensor] = None) -> torch.Tensor:
 
         if left_image.use_normalized_coords or right_image.use_normalized_coords:
             raise RuntimeError(

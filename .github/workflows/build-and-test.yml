@@ -23,9 +23,25 @@ jobs:
     needs: build_docker
     runs-on: [self-hosted]
     container: otaviog/stereo-matching:base
+      options: --gpus all
     steps:
       - name: Check out the repository
         uses: actions/checkout@v3
       - name: Build cpp code
         run: pip install .
-
+      - name: Install dev dependencies
+        run: pip install -r requirements-dev.txt
+      - name: Static check
+        run: pylint src/ tests/
+      # - name: Unit testing
+      #  run: pytest tests --junitxml=junit/test-results.xml --cov=com --cov-report=xml --cov-report=html
+  deploy:
+    runs-on: [self-hosted]
+    container: pytorch/pytorch:1.12.1-cuda11.3-cudnn8-devel
+    steps:
+      - name: Check install on clean pytorch install
+        uses: actions/checkout@v3
+      - name: Install the package
+        run: pip install .
+        env:
+          TORCH_CUDA_ARCH_LIST: 6.1 8.6
