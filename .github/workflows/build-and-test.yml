@@ -21,7 +21,7 @@ jobs:
   build:
     needs: build_docker
     runs-on: [self-hosted]
-    container: otaviog/stereo-matching-base:latest
+    container: otaviog/stereo-matching:base
     steps:
       - name: Check out the repository
         uses: actions/checkout@v3
