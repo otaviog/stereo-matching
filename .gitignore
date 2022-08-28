@@ -33,3 +33,5 @@ doc/cpp
 
 .devcontainer
 .vscode
+junit
+.coverage

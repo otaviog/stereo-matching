@@ -2,5 +2,7 @@ autopep8
 pylint
 ipdb
 pytest
-pytest-conv
+# pytest-conv
 pytest-benchmark
+Sphinx
+sphinx-rtd-theme
