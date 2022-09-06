@@ -13,7 +13,7 @@ REQUIREMENTS = [
 
 SETUP_KWARGS = dict(
     name='stereomatch',
-    version='1.0.0',
+    version="1.0.0",
     author='Otavio Gomes',
     author_email='otavio.b.gomes@gmail.com',
     description='Sample implementation of stereo matching algorithms',
@@ -46,26 +46,37 @@ except ImportError:
 
     # pylint: disable=ungrouped-imports
     from setuptools import setup
+    import torch
     from torch.utils.cpp_extension import (
         BuildExtension, CUDAExtension, include_paths)
 
-    setup(
-        ext_modules=[
+    if torch.version.cuda is None:
+        print("Your Torch version must support CUDA")
+        sys.exit(1)
+
+    SETUP_KWARGS.update(
+        dict(ext_modules=[
             CUDAExtension('_cstereomatch', [
                 'src/cuda_utils.cpp',
                 'src/cuda_texture.cpp',
-                'src/cuda_texture.cu',
+                'src/cuda_texture_gpu.cu',
                 'src/cost.cpp',
                 'src/ssd.cu',
                 'src/birchfield_cost.cu',
                 'src/winners_take_all.cu',
                 'src/dynamic_programming.cu',
                 'src/disparity_reduce.cpp',
-                'src/semiglobal.cu',
                 'src/semiglobal.cpp',
+                'src/semiglobal_gpu.cu',
                 'src/aggregation.cpp',
-            ], include_dirs=include_paths(cuda=True) + ["include", "include/stereomatch"])
+                'src/_cstereomatch.cpp'
+            ],
+                include_dirs=include_paths(
+                    cuda=True) + ["include", "include/stereomatch"],
+                extra_compile_args=["-std=c++17"]
+            )
         ],
-        cmdclass={
-            'build_ext': BuildExtension
-        }, **SETUP_KWARGS)
+            cmdclass={'build_ext': BuildExtension}
+        ))
+
+    setup(**SETUP_KWARGS)

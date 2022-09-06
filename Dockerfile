@@ -2,18 +2,21 @@ FROM nvidia/cudagl:11.2.2-devel-ubuntu20.04 AS base
 LABEL maintaner=otavio.b.gomes@gmail.com
 
 ## TODO: delete this
-RUN apt update && DEBIAN_FRONTEND=noninteractive apt -yq install aria2
+RUN apt update && DEBIAN_FRONTEND=noninteractive apt -yq install aria2 build-essential git
 
 WORKDIR /
 RUN aria2c https://repo.anaconda.com/miniconda/Miniconda3-py38_4.10.3-Linux-x86_64.sh
 RUN bash Miniconda3-py38_4.10.3-Linux-x86_64.sh -b -p /miniconda3 && rm Miniconda3-py38_4.10.3-Linux-x86_64.sh
 ENV PATH="/miniconda3/bin:${PATH}"
 
-RUN conda install cudatoolkit=11.1 -c pytorch -c conda-forge
-RUN conda install pytorch torchvision cudatoolkit=11.1 -c pytorch -c conda-forge
+RUN conda install pytorch torchvision torchaudio cudatoolkit=11.3 -c pytorch
 
+RUN pip install pypfm
 ADD environment.yml .
 RUN conda env update -n base --file environment.yml
+
+# Supress DWARF warnings messages.
+RUN rm /miniconda3/compiler_compat/ld && ln -s /usr/bin/ld /miniconda3/compiler_compat/ld
 
 ###
 # Devcontainer
