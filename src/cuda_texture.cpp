@@ -186,10 +186,8 @@ void CUDATexture::RegisterPybind(pybind11::module &m) {
           .def_readonly("use_normalized_coords",
                         &CUDATexture::use_normalized_coords_);
 
-#ifndef NDEBUG
   c.def_static("_run_transfer_test_kernel", &CUDATexture::RunTransferTestKernel)
       .def_static("_run_binding_test_kernel",
                   &CUDATexture::RunBindingTestKernel);
-#endif
 }
 }  // namespace stereomatch
