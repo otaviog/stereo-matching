@@ -6,7 +6,7 @@ from typing import Optional
 import torch
 
 
-def _are_tensors_incompatible(reuse_tensor, sizes, dtype, device):
+def _is_tensor_incompatible(reuse_tensor, sizes, dtype, device):
     return (reuse_tensor is None or reuse_tensor.size() != sizes
             or dtype != reuse_tensor.dtype
             or device != reuse_tensor.device)
@@ -27,7 +27,8 @@ def empty_tensor(*sizes, dtype: torch.dtype = torch.float32,
     Returns:
         An empty tensor. If both tensors are compatible, then it will return the `reuse_tensor`.
     """
-    if _are_tensors_incompatible(reuse_tensor, sizes, dtype, device):
+    if _is_tensor_incompatible(reuse_tensor, sizes, dtype, device):
+        del reuse_tensor
         return torch.empty(sizes, dtype=dtype, device=device)
     return reuse_tensor
 
@@ -43,9 +44,10 @@ def zeros_tensor_like(base_tensor, reuse_tensor: Optional[torch.Tensor] = None) 
     Returns:
         A zeros tensor. If both tensors are compatible, then it will return the `reuse_tensor`.
     """
-    if _are_tensors_incompatible(reuse_tensor, base_tensor.size(),
-                                 base_tensor.dtype, base_tensor.device):
+    if _is_tensor_incompatible(reuse_tensor, base_tensor.size(),
+                               base_tensor.dtype, base_tensor.device):
+        del reuse_tensor
         return torch.zeros_like(base_tensor)
 
-    reuse_tensor.zeros_()
+    reuse_tensor.zero_()
     return reuse_tensor

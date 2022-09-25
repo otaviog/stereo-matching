@@ -5,7 +5,7 @@ I revamp my old stereo matching code with CUDA in this repository and rewrite th
 
 Here's a video from the old implementation:
 
-[![Stereo matching](http://img.youtube.com/vi/EuIyLVVpwGs/0.jpg)](http://www.youtube.com/watch?v=EuIyLVVpwGs "Stereo matching sample old")
+[![Stereo matching](http://img.youtube.com/vi/EuIyLVVpwGs/0.jpg)](http://www.youtube.com/watch?v=EuIyLVVpwGs "Stereo matching")
 
 
 **Methods**
@@ -27,8 +27,8 @@ TBD
 
 **Requirements**:
 
-* Cuda toolkit installed
-* Pytorch
+* CUDA Toolkit>=10.0
+* Pytorch>=1.0
 
 ```shell
 $ pip install .

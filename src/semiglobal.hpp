@@ -11,7 +11,7 @@ template <typename T>
 struct Point2 {
   T x, y;
 
-  Point2(T x = 0, T y = 0) : x{x}, y{y} {}
+  STM_DEVICE_HOST Point2(T x = 0, T y = 0) : x{x}, y{y} {}
 
   Point2<T> &operator+=(const Point2<T> &other) {
     x += other.x;

@@ -40,14 +40,16 @@ struct SemiglobalKernel {
         output_cost_volume(
             Accessor<kCUDA, scalar_t, 3>::Get(output_cost_volume)) {}
 
-  __device__ void operator()(int disp, int path) {
+  __device__ void operator()(int disp, int path, bool inverse_path) {
+	auto path_desc(path_descriptors[path]);
+	if (inverse_path)
+	  path_desc = path_desc.inverse();
     const auto max_disparity = cost_volume.size(2);
 
     extern __shared__ __align__(sizeof(float)) uint8_t _shared_mem[];
     scalar_t* shr_prev_cost = (scalar_t*)_shared_mem;
     scalar_t* shr_prev_cost_min_search = &shr_prev_cost[max_disparity + 2];
 
-    const auto path_desc(path_descriptors[path]);
     auto current_pixel = cast_point2<int2>(path_desc.start);
 
     const auto initial_cost =
@@ -107,13 +109,13 @@ struct SemiglobalKernel {
 template <typename T>
 static __global__ void LaunchKernel(SemiglobalKernel<T> kernel,
                                     int path_descriptor_count,
-                                    int max_disparity) {
+                                    int max_disparity, bool inverse_path) {
   const int path_descriptor_idx = blockIdx.x;
   const int disparity = threadIdx.x;
 
   if (path_descriptor_idx < path_descriptor_count &&
       disparity < max_disparity) {
-    kernel(disparity, path_descriptor_idx);
+    kernel(disparity, path_descriptor_idx, inverse_path);
   }
 }
 
@@ -132,7 +134,10 @@ void RunSemiglobalAggregationGPU(const torch::Tensor& cost_volume,
             penalty2, output_cost_volume);
         LaunchKernel<<<path_descriptors.size(), max_disparity,
                        (2 * max_disparity + 3) * sizeof(scalar_t)>>>(
-            kernel, path_descriptors.size(), max_disparity);
+                           kernel, path_descriptors.size(), max_disparity, false);
+		LaunchKernel<<<path_descriptors.size(), max_disparity,
+                       (2 * max_disparity + 3) * sizeof(scalar_t)>>>(
+                           kernel, path_descriptors.size(), max_disparity, true);
       });
 }
 }  // namespace stereomatch

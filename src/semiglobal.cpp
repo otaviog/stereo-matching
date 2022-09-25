@@ -1,9 +1,9 @@
 #include "semiglobal.hpp"
 
 #include <cassert>
-#include <vector>
 
 #include "aggregation.hpp"
+#include "bordered_buffer.hpp"
 #include "check.hpp"
 
 namespace stereomatch {
@@ -14,32 +14,6 @@ constexpr H get_min(H head, T... tail) {
   ((tail < min ? min = tail, 0 : 0), ...);
   return min;
 }
-
-template <typename T, int border_size>
-struct BorderedBuffer {
- public:
-  typedef std::vector<T> ArrayType;
-  typedef typename ArrayType::const_iterator const_iterator;
-
-  BorderedBuffer(int size, T border_value) noexcept
-      : array(size + border_size) {
-    for (auto i = 0; i < border_size; ++i) {
-      array[i] = array[size + border_size + i] = border_value;
-    }
-  }
-
-  const T operator[](int idx) const noexcept {
-    return array[idx + border_size];
-  }
-
-  T &operator[](int idx) noexcept { return array[idx + border_size]; }
-
-  const_iterator begin() const { return array.begin() + border_size; }
-  const_iterator end() const { return array.end() - border_size; }
-
- private:
-  std::vector<T> array;
-};
 
 std::vector<SGPixelPath> SGPixelPath::GeneratePaths(size_t width,
                                                     size_t height) noexcept {
@@ -216,8 +190,7 @@ void AggregationOps::RunSemiglobal(const torch::Tensor &cost_volume,
 
       for (const auto sg_path_desc : aggregation_paths) {
         sgm_cost_op(sg_path_desc);
-        // TODO: Make the GPU version also run inverse paths
-        // sgm_cost_op(sg_path.inverse());
+        sgm_cost_op(sg_path_desc.inverse());
       }
     });
   }

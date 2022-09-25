@@ -18,7 +18,7 @@ def sample_stereo_pair():
     Fixture with sample stereo pair to use during testing.
     """
     image_base_dir = (Path(__file__).parent.parent /
-                      "test-data/middleburry/teddy/")
+                      "tests/data/middleburry/teddy/")
 
     target_size = (512, 256)
     left_image = torch.from_numpy(
@@ -49,6 +49,7 @@ class CostFixture:
         """
         return CostFixture(self.volume.to(device), self.left_image.to(device))
 
+
 @pytest.fixture
 def ssd_cost():
     """
@@ -58,7 +59,7 @@ def ssd_cost():
                   "test_cache/cost_volume_teddy.torch")
 
     image_base_dir = (Path(__file__).parent.parent /
-                      "test-data/middleburry/teddy/")
+                      "tests/data/middleburry/teddy/")
 
     left_image = torch.from_numpy(
         np.array(Image.open(image_base_dir / "im2.png").convert('L')))

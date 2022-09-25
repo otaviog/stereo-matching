@@ -27,7 +27,10 @@ SETUP_KWARGS = dict(
     packages=find_packages(exclude=['*._test']),
     install_requires=REQUIREMENTS,
     entry_points={
-        'console_scripts': ['stm-run-pair=stereomatch.single_image_app:main']
+        'console_scripts': [
+            'stm-image=stereomatch.cli_image:main',
+            'stm-video=stereomatch.cli_video:main'
+        ]
     }
 )
 

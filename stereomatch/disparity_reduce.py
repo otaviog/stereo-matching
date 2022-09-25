@@ -7,14 +7,10 @@ import torch
 
 from stereomatch._cstereomatch import (
     DisparityReduceOps as _DisparityReduceOps)
+from stereomatch.numeric import is_power_of_two
 from ._common import empty_tensor
 
 
-def _is_power_of_two(num):
-    """
-    https://stackoverflow.com/a/57027610
-    """
-    return (num != 0) and (num & (num-1) == 0)
 
 
 class WinnerTakesAll:
@@ -41,7 +37,7 @@ class WinnerTakesAll:
             cost_volume.size(0), cost_volume.size(1),
             dtype=torch.int32, device=cost_volume.device, reuse_tensor=disparity_img)
 
-        if cost_volume.is_cuda and not _is_power_of_two(cost_volume.size(2)):
+        if cost_volume.is_cuda and not is_power_of_two(cost_volume.size(2)):
             raise RuntimeError(
                 ("Winner takes all requires max disparity "
                  "(`cost_volume.size(2)`) to be a power of 2."))

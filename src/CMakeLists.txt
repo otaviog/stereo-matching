@@ -5,7 +5,7 @@ set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS} -Xcudafe --diag_suppress=esa_on_defaulte
 cuda_add_library(stereomatch
   cuda_utils.cpp
   cuda_texture.cpp
-  cuda_texture.cu
+  cuda_texture_gpu.cu
   # Costs
   cost.cpp
   ssd.cu
@@ -15,8 +15,8 @@ cuda_add_library(stereomatch
   dynamic_programming.cu
   disparity_reduce.cpp
   # Aggregations
-  semiglobal.cu
   semiglobal.cpp
+  semiglobal_gpu.cu
   aggregation.cpp
 )
 
