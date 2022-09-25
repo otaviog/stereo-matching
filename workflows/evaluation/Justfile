@@ -1,0 +1,21 @@
+set export
+
+CODE_DIR := `realpath ../..`
+
+download-middlebury:
+	wget https://vision.middlebury.edu/stereo/data/scenes2021/zip/all.zip
+	mkdir -p middlebury; cd middlebury; unzip ../all.zip
+
+docker-start:
+	mkdir -p flyte-context/tmp
+	mkdir -p flyte-context/home/dev
+	docker run -v $CODE_DIR:$CODE_DIR -w `pwd` \
+	  -v `pwd`/flyte-context/tmp:/tmp \
+	  -v `pwd`/flyte-context/home:/home/dev \
+	  -e PYTHONPATH=$CODE_DIR --gpus all \
+	  --user=dev \
+	  --name evaluation-workflow \
+	  -d --rm -it otaviog/stereo-matching-devcontainer:latest bash -c "pip install -e ../..; bash"
+
+run-metrics-wf:
+	docker exec -it evaluation-workflow pyflyte run workflow.py metrics_wf
