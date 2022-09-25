@@ -3,6 +3,7 @@ __pycache__
 .workflow.lmdb
 .benchmarks
 .secrets
+pipeline-out
 
 build
 cmake_install.cmake

@@ -69,17 +69,17 @@ def test_access():
     tensor = (torch.rand(128, 128) * 255.0).byte().contiguous()
     texture = CUDATexture.from_tensor(tensor)
     output_tensor = torch.zeros_like(tensor).cuda()
-    CUDATexture._run_test_kernel(texture, output_tensor)
+    CUDATexture._run_transfer_test_kernel(texture, output_tensor)
     torch.testing.assert_allclose(output_tensor.cpu(), tensor)
 
     tensor = (torch.rand(128, 128) * 255.0).float().contiguous()
     texture = CUDATexture.from_tensor(tensor)
     output_tensor = torch.zeros_like(tensor).cuda()
 
-    CUDATexture._run_test_kernel(texture, output_tensor)
+    CUDATexture._run_transfer_test_kernel(texture, output_tensor)
     torch.testing.assert_allclose(output_tensor.cpu(), tensor)
 
-def test_kernel2():
+def test_bindings():
     """
     Used for exploring internal CUDA texture parameters.
     """
@@ -87,7 +87,7 @@ def test_kernel2():
     tensor = (torch.rand(128, 128, device="cuda:0") * 255.0).float()
     output_tensor = torch.zeros_like(tensor)
 
-    CUDATexture._run_test_kernel2(tensor, output_tensor)
+    CUDATexture._run_binding_test_kernel(tensor, output_tensor)
 
     torch.testing.assert_allclose(tensor.cpu(), output_tensor.cpu())
 
@@ -108,7 +108,7 @@ def test_completeness():
             assert tex.channels == tensor.size(2)
 
             output_tensor = torch.zeros_like(tensor).squeeze().to("cuda:0")
-            CUDATexture._run_test_kernel(tex, output_tensor)
+            CUDATexture._run_transfer_test_kernel(tex, output_tensor)
 
             torch.testing.assert_allclose(tensor.squeeze().cpu(),
                                           output_tensor.cpu())
