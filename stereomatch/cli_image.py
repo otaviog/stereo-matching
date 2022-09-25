@@ -54,6 +54,9 @@ def main():
                         help="Whether to use Cuda-based GPU acceleration.")
     parser.add_argument("-sd", "--show-depthmap", action="store_true",
                         help="Shows depthmap.")
+    parser.add_argument("-fig", "--figure", action="store_true",
+                        help="Shows a more information than only the depthmap.")
+
 
     args = parser.parse_args()
     aggregation_method = AGGREGATION_METHODS.get(args.aggregation_method, None)
@@ -64,10 +67,12 @@ def main():
                         DISPARITY_METHODS[args.disparity_method](),
                         aggregation=aggregation_method)
 
+    left_image_rgb = Image.open(args.left_image)
     left_image = torch.from_numpy(
-        np.array(Image.open(args.left_image).convert('L'))).float()
+        np.array(left_image_rgb.convert('L'))).float()
+    right_image_rgb = Image.open(args.right_image)
     right_image = torch.from_numpy(
-        np.array(Image.open(args.right_image).convert('L'))).float()
+        np.array(right_image_rgb.convert('L'))).float()
 
     if args.cuda_on:
         left_image = left_image.to("cuda:0")
@@ -77,11 +82,20 @@ def main():
         left_image, right_image).cpu().numpy().astype(np.uint16)
 
     plt.figure()
-    plt.imshow(depthmap)
-    plt.axis("off")
+    if not args.figure:
+        plt.imshow(depthmap)
+        plt.axis("off")
+    else:
+        fig, axs = plt.subplots(1, 3, figsize=(16, 8))
+        axs[0].imshow(np.array(left_image_rgb))
+        axs[0].axis('off')
+        axs[1].imshow(np.array(right_image_rgb))
+        axs[1].axis('off')
+        axs[2].imshow(depthmap)
+        axs[2].axis("off")
+        fig.tight_layout()
     if args.show_depthmap:
         plt.show()
-
     plt.savefig(args.output_depthmap)
     plt.close()
 
