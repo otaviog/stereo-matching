@@ -36,6 +36,8 @@ RUN pip install -U pip && pip install -r requirements.txt
 # stereo-mideval downgrades numpy, lets update it again.
 RUN pip install -U numpy
 
+RUN conda install just -c conda-forge
+
 ARG USERNAME=dev
 ARG USER_UID=1000
 ARG USER_GID=$USER_UID
