@@ -7,7 +7,7 @@ from setuptools import find_packages
 REQUIREMENTS = [
     'numpy',
     'matplotlib',
-    'opencv',
+    'opencv-python',
     'scipy',
     'torch'
 ]
