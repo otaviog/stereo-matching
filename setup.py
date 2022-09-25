@@ -1,47 +1,20 @@
-"""A setuptools based setup module for fusion-toolbox
+"""A setuptools based setup module.
 """
 
 import sys
-from os import path
-
-
 from setuptools import find_packages
 
-try:
-    from skbuild import setup
-except ImportError:
-    print('scikit-build is required to build from source.', file=sys.stderr)
-    print('Please run:', file=sys.stderr)
-    print('', file=sys.stderr)
-    print('  python -m pip install scikit-build')
-    sys.exit(1)
-
-
-def _forbid_publish():
-    argv = sys.argv
-    blacklist = ['register', 'upload']
-
-    for command in blacklist:
-        if command in argv:
-            values = {'command': command}
-            print('Command "%(command)s" has been blacklisted, exiting...' %
-                  values)
-            sys.exit(2)
-
-
-_forbid_publish()
-
-REQUIREMENTS = [    
+REQUIREMENTS = [
     'numpy',
     'matplotlib',
+    'opencv-python',
     'scipy',
     'torch'
 ]
 
-
-setup(
+SETUP_KWARGS = dict(
     name='stereomatch',
-    version='1.0.0',
+    version="1.0.0",
     author='Otavio Gomes',
     author_email='otavio.b.gomes@gmail.com',
     description='Sample implementation of stereo matching algorithms',
@@ -53,5 +26,61 @@ setup(
         'Programming Language :: Python :: 3.5'
     ],
     packages=find_packages(exclude=['*._test']),
-    install_requires=REQUIREMENTS
+    install_requires=REQUIREMENTS,
+    entry_points={
+        'console_scripts': [
+            'stm-image=stereomatch.cli_image:main',
+            'stm-video=stereomatch.cli_video:main'
+        ]
+    }
 )
+
+
+try:
+    from skbuild import setup
+
+    setup(**SETUP_KWARGS)
+except ImportError:
+    print('Note: scikit-build is required for developers source builds.',
+          file=sys.stderr)
+    print('Please run:', file=sys.stderr)
+    print('', file=sys.stderr)
+    print('  python -m pip install scikit-build')
+    print('Using production build')
+
+    # pylint: disable=ungrouped-imports
+    from setuptools import setup
+    import torch
+    from torch.utils.cpp_extension import (
+        BuildExtension, CUDAExtension, include_paths)
+
+    if torch.version.cuda is None:
+        print("Your Torch version must support CUDA")
+        sys.exit(1)
+
+    SETUP_KWARGS.update(
+        dict(ext_modules=[
+            CUDAExtension('_cstereomatch', [
+                'src/cuda_utils.cpp',
+                'src/cuda_texture.cpp',
+                'src/cuda_texture_gpu.cu',
+                'src/cost.cpp',
+                'src/ssd.cu',
+                'src/birchfield_cost.cu',
+                'src/winners_take_all.cu',
+                'src/dynamic_programming.cu',
+                'src/disparity_reduce.cpp',
+                'src/semiglobal.cpp',
+                'src/semiglobal_gpu.cu',
+                'src/aggregation.cpp',
+                'src/_cstereomatch.cpp'
+            ],
+                include_dirs=include_paths(
+                    cuda=True) + ["include", "include/stereomatch"],
+                extra_compile_args=["-std=c++17"]
+            )
+        ],
+            cmdclass={'build_ext': BuildExtension}
+        ))
+
+    setup(**SETUP_KWARGS)

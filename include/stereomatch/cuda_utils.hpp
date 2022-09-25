@@ -13,11 +13,11 @@
 #define CudaCheck() stereomatch::_CudaCheck(__FILE__, __LINE__)
 
 #ifdef __CUDACC__
-#define STB_DEVICE __device__
-#define STB_DEVICE_HOST __device__ __host__
+#define STM_DEVICE __device__
+#define STM_DEVICE_HOST __device__ __host__
 #else
-#define STB_DEVICE
-#define STB_DEVICE_HOST
+#define STM_DEVICE
+#define STM_DEVICE_HOST
 #endif
 namespace stereomatch {
 

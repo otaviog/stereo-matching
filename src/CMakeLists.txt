@@ -4,27 +4,31 @@ set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS} -Xcudafe --diag_suppress=esa_on_defaulte
 
 cuda_add_library(stereomatch
   cuda_utils.cpp
+  cuda_texture.cpp
+  cuda_texture_gpu.cu
   # Costs
   cost.cpp
-  ssd.cu  
-  # Aggregations
-  aggregation.cpp
+  ssd.cu
+  birchfield_cost.cu
+  # Disparity reduce
   winners_take_all.cu
   dynamic_programming.cu
+  disparity_reduce.cpp
+  # Aggregations
+  semiglobal.cpp
+  semiglobal_gpu.cu
+  aggregation.cpp
 )
 
 
 target_include_directories(stereomatch
   PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../include/stereomatch>
-  $<BUILD_INTERFACE:${EIGEN3_INCLUDE_DIR}>
   )
-
 target_link_libraries(stereomatch "${TORCH_LIBRARIES}" "${TORCH_PYTHON_LIBRARY}" )
-
 set_property(TARGET stereomatch PROPERTY CXX_STANDARD 17)
-
 set_target_properties(stereomatch PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
+# set_property(TARGET stereomatch PROPERTY CXX_INCLUDE_WHAT_YOU_USE ${iwyu_path})
 
 add_library(_cstereomatch SHARED _cstereomatch.cpp)
 set_property(TARGET _cstereomatch PROPERTY CXX_STANDARD 17)

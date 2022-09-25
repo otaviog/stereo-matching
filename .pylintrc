@@ -1,0 +1,18 @@
+[tool.pylint]
+good-names = i,j,k,ex,Run,_,x,y,X,Y,x1,x2,y1,y2,g,p,t,to,ok,h,w,n
+output-format = colorized
+max-line-length = 100
+ignored-modules = numpy, PurePath,stereomatch._cstereomatch
+ignored-classes = numpy, PurePath
+generated-members=numpy.*,torch.*,stereomatch._cstereomatch.*,cv2.*
+  pytest.STM_MAX_DISPARITY,pytest.STM_TEST_OUTPUT_PATH
+disable = fixme,
+  too-many-instance-attributes,
+  too-few-public-methods,
+  too-many-locals,
+  too-many-arguments,
+  bare-except,
+  broad-except,
+  duplicate-code,
+  not-callable,
+  consider-using-f-string

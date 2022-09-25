@@ -23,3 +23,6 @@ _skbuild
 **/*.lib
 **/*.dll
 **/*.exe
+workflows/evaluation/middlebury/
+workflows/evaluation/output
+**/flyte-context

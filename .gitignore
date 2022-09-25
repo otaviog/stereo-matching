@@ -1,11 +1,13 @@
 __pycache__
 *.egg-info
 .workflow.lmdb
+.benchmarks
+.secrets
 
 build
 cmake_install.cmake
 CMakeFiles
-/Makefile
+Makefile
 detect_cuda_compute_capabilities.cpp
 detect_cuda_version.cc
 compile_commands.json
@@ -31,3 +33,5 @@ doc/cpp
 
 .devcontainer
 .vscode
+junit
+.coverage
