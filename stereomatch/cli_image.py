@@ -8,7 +8,6 @@ from PIL import Image
 import numpy as np
 import torch
 import matplotlib.pyplot as plt
-import imageio
 
 from .cost import SSD, SSDTexture, Birchfield
 from .aggregation import Semiglobal
@@ -37,19 +36,24 @@ def main():
     CLI for estimating disparity from stereo images.
     """
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("left_image", metavar="left-image")
-    parser.add_argument("right_image", metavar="right-image")
-    parser.add_argument("max_disparity", metavar="max-disparity", type=int)
-    parser.add_argument("output_depthmap", metavar="output-depthmap")
+    parser.add_argument("left_image", metavar="left-image", help="Left image")
+    parser.add_argument("right_image", metavar="right-image", help="Right image")
+    parser.add_argument("max_disparity", metavar="max-disparity", type=int,
+                        help="Maximum disparity for stereo matching.")
+    parser.add_argument("output_depthmap", metavar="output-depthmap",
+                        help="Output file of the depth map.")
     parser.add_argument("-cm", "--cost-method", choices=COST_METHODS.keys(),
-                        default="ssd")
+                        default="ssd", help="Cost function of the stereo pair.")
     parser.add_argument("-am", "--aggregation-method",
-                        choices=AGGREGATION_METHODS.keys(), default=None)
+                        choices=AGGREGATION_METHODS.keys(), default=None,
+                        help="Aggregation method to improve the cost function.")
     parser.add_argument("-dm", "--disparity-method",
-                        choices=DISPARITY_METHODS.keys(), default="wta")
-    parser.add_argument("-g", "--ground-truth")
-    parser.add_argument("-c", "--cuda-on", action="store_true")
-    parser.add_argument("-sd", "--show-depthmap", action="store_true")
+                        choices=DISPARITY_METHODS.keys(), default="wta",
+                        help="Disparity method for matching the pixels")
+    parser.add_argument("-c", "--cuda-on", action="store_true",
+                        help="Whether to use Cuda-based GPU acceleration.")
+    parser.add_argument("-sd", "--show-depthmap", action="store_true",
+                        help="Shows depthmap.")
 
     args = parser.parse_args()
     aggregation_method = AGGREGATION_METHODS.get(args.aggregation_method, None)
@@ -80,7 +84,6 @@ def main():
 
     plt.savefig(args.output_depthmap)
     plt.close()
-    # imageio.imsave(args.output_depthmap, depthmap)
 
 
 if __name__ == '__main__':

@@ -84,16 +84,12 @@ class StereoCapture:
             return False, StereoCaptureImage()
 
         half_width = frame.shape[1] // 2
-        if True:
-            return True, StereoCaptureImage(
-                frame[:, :half_width, :],
-                frame[:, half_width:, :],
-                frame)
-        else:
-            return True, StereoCaptureImage(
-                frame[:, half_width:, :],
-                frame[:, :half_width, :],
-                frame)
+
+        return True, StereoCaptureImage(
+            frame[:, :half_width, :],
+            frame[:, half_width:, :],
+            frame)
+
 
     def close(self):
         """

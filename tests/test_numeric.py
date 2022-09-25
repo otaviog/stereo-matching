@@ -1,6 +1,13 @@
+"""
+Testing of numerical functions.
+"""
+
 from stereomatch.numeric import next_power_of_2
 
 def test_should_return_next_power_2():
+    """
+    Verifies if next power of 2 return the next power 2.
+    """
     assert next_power_of_2(0) == 1
     assert next_power_of_2(1) == 1
     assert next_power_of_2(2) == 2

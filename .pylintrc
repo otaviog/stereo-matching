@@ -1,5 +1,5 @@
 [tool.pylint]
-good-names = i,j,k,ex,Run,_,x,y,X,Y,x1,x2,y1,y2,g,p,t,to,ok
+good-names = i,j,k,ex,Run,_,x,y,X,Y,x1,x2,y1,y2,g,p,t,to,ok,h,w,n
 output-format = colorized
 max-line-length = 100
 ignored-modules = numpy, PurePath,stereomatch._cstereomatch

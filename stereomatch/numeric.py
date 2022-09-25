@@ -1,3 +1,7 @@
+"""
+Common numerical stuff.
+"""
+
 def is_power_of_two(num: int) -> bool:
     """
     https://stackoverflow.com/a/57027610

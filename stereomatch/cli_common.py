@@ -22,7 +22,27 @@ DISPARITY_METHODS = {
 }
 
 
-def create_pipeline(cost_method: str, disp_method: str, aggr_method: str, max_disparity: int = 32) -> Pipeline:
+def create_pipeline(cost_method: str, disp_method: str, aggr_method: str,
+                    max_disparity: int = 32) -> Pipeline:
+    """
+    Creates a pipelines using strings to refer to function/methods names.
+
+    Available cost functions are:
+    >>> list(COST_METHODS.keys())
+
+    Available disparity methods are:
+    >>> list(DISPARITY_METHODS.keys())
+
+    Available aggregation methods are:
+    >>> list(AGGREGATION_METHODS.keys())
+
+    Args:
+        cost_method: Refer to the available functions.
+        disp_method: Refer to the available methods.
+        aggr_method: Refer to the available methods.
+        max_disparity: Maximum disparity that the cost function should consider.
+    """
+
     aggregation_method = AGGREGATION_METHODS.get(aggr_method, None)
     if aggregation_method is not None:
         aggregation_method = aggregation_method()

@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 """
-CLI for estimating disparity from stereo images.
+CLI for estimating disparity from stereo videos.
 """
 import argparse
 import pickle
@@ -12,7 +12,7 @@ import matplotlib.pyplot as plt
 
 from .capture import StereoCapture
 from .calibration import StereoRectifier
-from cli_common import (create_pipeline, COST_METHODS, AGGREGATION_METHODS,
+from .cli_common import (create_pipeline, COST_METHODS, AGGREGATION_METHODS,
                         DISPARITY_METHODS)
 
 
@@ -23,17 +23,17 @@ def _print_instructions():
     """)
 
 
-def main():
-    """
-    CLI for estimating disparity from stereo images.
-    """
+def _parse_args():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("input_mode", choices=[
-                        "dev", "file"], metavar="input-mode")
-    parser.add_argument("input", type=str)
-    parser.add_argument("max_disparity", metavar="max-disparity", type=int)
+                        "dev", "file"], metavar="input-mode",
+                        help="Opens either a camera `dev`ice or reads from a video `file`.")
+    parser.add_argument("input", type=str,
+                        help="Input source use an integer for devices or strings for video files.")
+    parser.add_argument("max_disparity", metavar="max-disparity", type=int,
+                        help="Maximum disparity")
 
-    parser.add_argument("-cal", "--calib")
+    parser.add_argument("-cal", "--calib", help="Calibration pickle.")
 
     parser.add_argument("-cm", "--cost-method", choices=COST_METHODS.keys(),
                         default="ssd")
@@ -42,10 +42,16 @@ def main():
     parser.add_argument("-dm", "--disparity-method",
                         choices=DISPARITY_METHODS.keys(), default="wta")
 
-    parser.add_argument("-c", "--cuda-on", action="store_true")
+    parser.add_argument("-c", "--cuda-on", action="store_true", help="Wether it should use cuda")
 
-    args = parser.parse_args()
+    return parser.parse_args()
 
+def main():
+    """
+    Entry point.
+    """
+    # pylint: disable=too-many-branches,too-many-statements
+    args = _parse_args()
     pipeline = create_pipeline(args.cost_method,
                                args.disparity_method,
                                args.aggregation_method)
