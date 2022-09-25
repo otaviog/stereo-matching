@@ -31,6 +31,11 @@ RUN chmod 777 /miniconda3/bin /miniconda3/lib/python3.8/site-packages
 ADD requirements-dev.txt .
 RUN pip install -U pip && pip install -r requirements-dev.txt
 
+ADD requirements.txt .
+RUN pip install -U pip && pip install -r requirements.txt
+# stereo-mideval downgrades numpy, lets update it again.
+RUN pip install -U numpy
+
 ARG USERNAME=dev
 ARG USER_UID=1000
 ARG USER_GID=$USER_UID
